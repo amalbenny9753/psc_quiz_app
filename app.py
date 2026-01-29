@@ -11,13 +11,14 @@ def initialize_gemini():
         api_key = st.secrets.get("GEMINI_KEY") or st.secrets.get("GEN_API_KEY")
         
         if not api_key:
-            st.error("⚠️ API key not found in secrets.toml. Please add GEMINI_API_KEY to your secrets.")
+            st.error("⚠️ API key not found in secrets.toml. Please add GEMINI_KEY to your secrets.")
             return None
         
         genai.configure(api_key=api_key)
-        return genai.GenerativeModel('gemini-3-flash-preview')
-        st.error(f"Failed to initialize Gemini API: {str(e)}")
-        return None
+        return genai.GenerativeModel('gemini-3-flash-preview')  
+    except Exception as e: 
+        st.error(f"Failed to initialize Gemini API: {str(e)}") 
+        return None  
 
 model = initialize_gemini()
 
