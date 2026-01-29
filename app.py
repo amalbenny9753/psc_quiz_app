@@ -194,7 +194,7 @@ with st.sidebar:
                             button_type = "secondary"
                         
                         # Current question highlight
-                        if q_num == idx:
+                        if q_num == st.session_state.current_idx:
                             button_label = f"► {q_num + 1}"
                         
                         if st.button(button_label, key=f"nav_{q_num}", type=button_type, use_container_width=True):
