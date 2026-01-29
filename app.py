@@ -1,12 +1,12 @@
 import streamlit as st
 import google.generativeai as genai
 import json
-from fpdf import FPDF
 
 # --- CONFIGURATION ---
-GEN_API_KEY = "AIzaSyAnPOgMj_p3WAbnHbPGPb6wstj-JwLZaWo" 
+GEN_API_KEY = st.secrets["GEMINI_KEY"]
 genai.configure(api_key=GEN_API_KEY)
-model = genai.GenerativeModel('gemini-3-flash-preview') # Use the stable flash model
+# Using the latest 2026 stable-preview model name
+model = genai.GenerativeModel('gemini-3-flash-preview')
 
 def get_psc_questions(topic, language, count, level):
     prompt = f"""
@@ -18,7 +18,7 @@ def get_psc_questions(topic, language, count, level):
       "options": ["A", "B", "C", "D"], 
       "answer": "Exact correct string",
       "explanation": "Brief context/fact in {language}",
-      "sub_topic": "Specific sub-area"
+      "sub_topic": "Specific sub-area (e.g., Travancore History, Biology-Human Body)"
     }}]
     Return ONLY the raw JSON.
     """
@@ -29,19 +29,11 @@ def get_psc_questions(topic, language, count, level):
 def generate_revision_notes(wrong_questions, language):
     topics_list = [q['sub_topic'] for q in wrong_questions]
     prompt = f"""
-    The student got these topics wrong: {set(topics_list)}.
-    Provide high-yield bulleted revision notes in {language} for these specific areas based on Kerala PSC trends.
+    The student got these topics wrong in a Kerala PSC mock test: {set(topics_list)}.
+    Provide high-yield bulleted revision notes in {language} for these specific areas based on Kerala PSC trends (2021-2025).
     """
     response = model.generate_content(prompt)
     return response.text
-
-def create_pdf(notes_text):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    # multi_cell handles long text wrapping
-    pdf.multi_cell(0, 10, txt=notes_text.encode('latin-1', 'replace').decode('latin-1'))
-    return pdf.output()
 
 # --- SESSION STATE ---
 if "questions" not in st.session_state:
@@ -64,12 +56,11 @@ with st.sidebar:
     topic = st.text_input("Topic", "General Knowledge")
     
     if st.button("Start New Quiz"):
-        with st.spinner("Preparing your quiz..."):
-            st.session_state.questions = get_psc_questions(topic, lang, num_q, level)
-            st.session_state.current_idx = 0
-            st.session_state.user_answers = {}
-            st.session_state.quiz_finished = False
-            st.rerun()
+        st.session_state.questions = get_psc_questions(topic, lang, num_q, level)
+        st.session_state.current_idx = 0
+        st.session_state.user_answers = {}
+        st.session_state.quiz_finished = False
+        st.rerun()
 
 if st.session_state.questions:
     if not st.session_state.quiz_finished:
@@ -91,7 +82,7 @@ if st.session_state.questions:
                 else:
                     st.write(option)
             else:
-                if st.button(option, key=f"q_{idx}_{option}", use_container_width=True):
+                if st.button(option, key=f"q_{idx}_{option}"):
                     st.session_state.user_answers[idx] = option
                     st.rerun()
 
@@ -123,19 +114,8 @@ if st.session_state.questions:
         
         if wrong_q:
             st.subheader("Areas for Improvement 🧠")
-            with st.spinner("Generating custom study notes..."):
+            with st.spinner("Generating custom study notes based on your mistakes..."):
                 notes = generate_revision_notes(wrong_q, lang)
                 st.markdown(notes)
-                
-                # PDF Generation
-                pdf_bytes = create_pdf(notes)
-                st.download_button(
-                    label="📥 Download Study Notes as PDF",
-                    data=pdf_bytes,
-                    file_name="PSC_Revision_Notes.pdf",
-                    mime="application/pdf"
-                )
         else:
-            st.success("Perfect Score! You're ready for the exam!")
-else:
-    st.info("👈 Set your topic and click 'Start New Quiz' in the sidebar!")
+            st.success("Perfect Score! You don't need revision notes for this topic.")
