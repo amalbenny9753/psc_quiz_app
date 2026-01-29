@@ -8,7 +8,7 @@ def initialize_gemini():
     """Initialize Gemini API with error handling"""
     try:
         # Get API key from Streamlit secrets
-        api_key = st.secrets.get("GEMINI_API_KEY") or st.secrets.get("GEN_API_KEY")
+        api_key = st.secrets.get("GEMINI_KEY") or st.secrets.get("GEN_API_KEY")
         
         if not api_key:
             st.error("⚠️ API key not found in secrets.toml. Please add GEMINI_API_KEY to your secrets.")
