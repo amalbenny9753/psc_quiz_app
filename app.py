@@ -6,114 +6,100 @@ import os
 from fpdf import FPDF
 from google.api_core import exceptions
 
-# --- 1. ROBUST CONFIGURATION ---
-# This looks for GEMINI_KEYS in your .streamlit/secrets.toml
-ALL_KEYS = st.secrets.get("GEMINI_KEYS", [])
-
-# If the list is empty, try to find a single key GEMINI_KEY
-if not ALL_KEYS:
-    single = st.secrets.get("GEMINI_KEY")
-    if single:
-        ALL_KEYS = [single]
-
-# --- 2. SESSION STATE INITIALIZATION ---
-# We use this to keep the quiz alive and rotate keys silently
-if "key_index" not in st.session_state: st.session_state.key_index = 0
-if "questions" not in st.session_state: st.session_state.questions = None
-if "current_idx" not in st.session_state: st.session_state.current_idx = 0
-if "user_answers" not in st.session_state: st.session_state.user_answers = {}
-if "quiz_finished" not in st.session_state: st.session_state.quiz_finished = False
-
-# --- 3. HELPER FUNCTIONS ---
-
-def get_model():
-    """Rotates keys and returns a fresh model instance."""
-    if not ALL_KEYS:
-        return None
-    current_key = ALL_KEYS[st.session_state.key_index]
-    genai.configure(api_key=current_key)
-    return genai.GenerativeModel('gemini-1.5-flash')
-
-def rotate_key():
-    st.session_state.key_index = (st.session_state.key_index + 1) % len(ALL_KEYS)
-    st.toast(f"🔄 Rotating to API Key {st.session_state.key_index + 1}...", icon="⏳")
+# --- CONFIGURATION ---
+GEN_API_KEY = st.secrets["GEMINI_KEY"]
+genai.configure(api_key=GEN_API_KEY)
+# Using the latest 2026 stable-preview model name
+model = genai.GenerativeModel('gemini-3-flash-preview')
 
 def get_psc_questions(topic, language, count, level):
-    """Fetches questions with automatic retry and key rotation."""
-    for attempt in range(len(ALL_KEYS)):
-        model = get_model()
-        if not model: return None
-        
-        prompt = f"""
-        Generate {count} REAL Kerala PSC questions on '{topic}' for {level} level.
-        Language: {language}.
-        Format as a JSON list of dictionaries:
-        [{{
-          "question": "...", 
-          "options": ["A", "B", "C", "D"], 
-          "answer": "Exact correct string",
-          "explanation": "Brief context/fact in {language}",
-          "sub_topic": "Specific sub-area"
-        }}]
-        Return ONLY the raw JSON.
-        """
-        
+    prompt = f"""
+    Generate {count} REAL Kerala PSC questions (2021-2025) on '{topic}' for {level} level.
+    Language: {language}.
+    Format as a JSON list of dictionaries:
+    [{{
+      "question": "...", 
+      "options": ["A", "B", "C", "D"], 
+      "answer": "Exact correct string",
+      "explanation": "Brief context/fact in {language}",
+      "sub_topic": "Specific sub-area"
+    }}]
+    Return ONLY the raw JSON.
+    """
+    
+    for attempt in range(3):
         try:
             response = model.generate_content(prompt)
-            # Robust JSON cleaning
-            clean_text = response.text.strip()
-            if "```json" in clean_text:
-                clean_text = clean_text.split("```json")[1].split("```")[0].strip()
-            elif "```" in clean_text:
-                clean_text = clean_text.split("```")[1].split("```")[0].strip()
-            
+            # Remove markdown formatting if the AI includes it
+            clean_text = response.text.replace("```json", "").replace("```", "").strip()
             return json.loads(clean_text)
-            
         except exceptions.ResourceExhausted:
-            rotate_key()
-            time.sleep(2) # Backoff delay
-            continue
+            wait_time = (attempt + 1) * 12 # 2026 Free Tier is stricter; wait longer
+            if attempt < 2:
+                st.warning(f"🚦 API Busy (Rate Limit). Retrying in {wait_time}s...")
+                time.sleep(wait_time)
+            else:
+                st.error("Daily limit reached. Please try again tomorrow or reduce the number of questions.")
+                return None
         except Exception as e:
-            rotate_key()
-            continue
-            
-    return None
+            st.error(f"Generation Error: {e}")
+            return None
+
+def generate_revision_notes(wrong_questions, language):
+    topics_list = [q.get('sub_topic', 'General') for q in wrong_questions]
+    prompt = f"""
+    The student got these Kerala PSC topics wrong: {set(topics_list)}.
+    Provide high-yield bulleted revision notes in {language} for these areas.
+    Focus on repeated PSC facts.
+    """
+    try:
+        response = model.generate_content(prompt)
+        return response.text
+    except:
+        return "Could not generate notes. Please try again later."
 
 def create_pdf(notes_text):
     try:
         pdf = FPDF()
         pdf.add_page()
-        # Fallback to Arial if Malayalam font is missing
+        
         font_path = "NotoSansMalayalam-Regular.ttf"
+        
         if os.path.exists(font_path):
             pdf.add_font('Malayalam', '', font_path)
             pdf.set_font('Malayalam', size=12)
         else:
+            # Better fallback: warn the user the font is missing
             pdf.set_font("Arial", size=12)
+            notes_text = "ERROR: Malayalam font file not found on server.\n\n" + notes_text.encode('ascii', 'ignore').decode('ascii')
+            
         pdf.multi_cell(0, 10, txt=notes_text)
         return bytes(pdf.output()) 
-    except:
+        
+    except Exception as e:
+        st.error(f"PDF creation failed: {e}")
         return None
 
-# --- 4. UI LAYOUT ---
-st.set_page_config(page_title="PSC AI Tutor Pro", layout="centered")
+# --- SESSION STATE ---
+for key in ["questions", "current_idx", "user_answers", "quiz_finished"]:
+    if key not in st.session_state:
+        if key == "questions": st.session_state[key] = None
+        elif key == "current_idx": st.session_state[key] = 0
+        elif key == "user_answers": st.session_state[key] = {}
+        elif key == "quiz_finished": st.session_state[key] = False
 
-# Error message if keys are missing
-if not ALL_KEYS:
-    st.error("🚨 Configuration Error: No API keys found.")
-    st.info("Check: Is your folder named '.streamlit' and your file 'secrets.toml'?")
-    st.stop()
+# --- UI ---
+st.set_page_config(page_title="PSC AI Tutor", layout="centered")
 
 with st.sidebar:
-    st.header("⚙️ Settings")
-    st.success(f"Connected to {len(ALL_KEYS)} Keys")
+    st.header("Exam Settings")
     lang = st.radio("Language", ["English", "Malayalam"])
-    level = st.selectbox("Level", ["10th/SSLC", "Plus Two", "Degree"])
-    num_q = st.slider("Questions", 5, 20, 10)
-    topic = st.text_input("Topic", "Kerala Geography")
+    level = st.selectbox("Exam Level", ["10th/SSLC", "Plus Two", "Degree"])
+    num_q = st.slider("Questions", 5, 20, 10) # Lowered max to 20 to avoid token limits
+    topic = st.text_input("Topic", "General Knowledge")
     
-    if st.button("🚀 Start New Quiz"):
-        with st.spinner("Fetching Questions..."):
+    if st.button("Start New Quiz"):
+        with st.spinner("Fetching latest PSC questions..."):
             questions = get_psc_questions(topic, lang, num_q, level)
             if questions:
                 st.session_state.questions = questions
@@ -122,44 +108,72 @@ with st.sidebar:
                 st.session_state.quiz_finished = False
                 st.rerun()
 
-# --- 5. MAIN QUIZ ENGINE ---
+# --- MAIN QUIZ LOGIC ---
 if st.session_state.questions:
     if not st.session_state.quiz_finished:
         idx = st.session_state.current_idx
         q = st.session_state.questions[idx]
         
         st.progress((idx + 1) / len(st.session_state.questions))
-        st.subheader(f"Q{idx+1}: {q['question']}")
+        st.write(f"**Question {idx + 1} of {len(st.session_state.questions)}**")
+        st.subheader(q['question'])
         
         selected = st.session_state.user_answers.get(idx)
+        
         for option in q['options']:
             if selected:
-                if option == q['answer']: st.success(f"✅ {option}")
-                elif option == selected: st.error(f"❌ {option}")
-                else: st.write(f"⚪ {option}")
+                if option == q['answer']:
+                    st.success(f"✅ {option}")
+                elif option == selected:
+                    st.error(f"❌ {option}")
+                else:
+                    st.write(option)
             else:
                 if st.button(option, key=f"q_{idx}_{option}", use_container_width=True):
                     st.session_state.user_answers[idx] = option
                     st.rerun()
 
         if selected:
-            st.info(f"**Explanation:** {q.get('explanation', '')}")
+            st.info(f"**Explanation:** {q.get('explanation', 'No details available.')}")
+            
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("⬅️ Previous") and idx > 0:
+                st.session_state.current_idx -= 1
+                st.rerun()
+        with col2:
             if idx < len(st.session_state.questions) - 1:
-                if st.button("Next Question ➡️"):
+                if st.button("Next ➡️"):
                     st.session_state.current_idx += 1
                     st.rerun()
             else:
-                if st.button("Finish Quiz 🏆"):
+                if st.button("Finish & See Results 🏆"):
                     st.session_state.quiz_finished = True
                     st.rerun()
     else:
-        # Results Page
+        # --- RESULTS PAGE ---
         st.balloons()
-        correct = sum(1 for i, q in enumerate(st.session_state.questions) if st.session_state.user_answers.get(i) == q['answer'])
-        st.title(f"Score: {correct} / {len(st.session_state.questions)}")
+        correct_count = sum(1 for i, q in enumerate(st.session_state.questions) if st.session_state.user_answers.get(i) == q['answer'])
+        st.title(f"Score: {correct_count} / {len(st.session_state.questions)}")
         
-        if st.button("🔄 Restart Quiz"):
-            st.session_state.questions = None
-            st.rerun()
+        wrong_q = [st.session_state.questions[i] for i, q in enumerate(st.session_state.questions) 
+                   if st.session_state.user_answers.get(i) != q['answer']]
+        
+        if wrong_q:
+            st.subheader("Revision Strategy 🧠")
+            with st.spinner("AI is preparing your custom notes..."):
+                notes = generate_revision_notes(wrong_q, lang)
+                st.markdown(notes)
+                
+                pdf_bytes = create_pdf(notes)
+                if pdf_bytes:
+                    st.download_button(
+                        label="📥 Download Malayalam Study Notes (PDF)",
+                        data=pdf_bytes,
+                        file_name="PSC_Notes.pdf",
+                        mime="application/pdf"
+                    )
+        else:
+            st.success("Perfect Score! You are a PSC Pro!")
 else:
-    st.info("👈 Enter a topic in the sidebar and click 'Start New Quiz' to begin.")
+    st.info("👈 Set your topic and click 'Start New Quiz' in the sidebar!")
