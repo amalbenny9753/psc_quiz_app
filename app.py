@@ -45,7 +45,6 @@ def generate_revision_notes(wrong_questions, language):
 
 def create_pdf(notes_text):
     try:
-        # Use fpdf2 (ensure 'fpdf2' is in requirements.txt)
         pdf = FPDF()
         pdf.add_page()
         
@@ -53,21 +52,21 @@ def create_pdf(notes_text):
         
         import os
         if os.path.exists(font_path):
-            # The 'uni=True' is handled automatically in fpdf2
             pdf.add_font('Malayalam', '', font_path)
             pdf.set_font('Malayalam', size=12)
         else:
-            # Fallback if font is missing
             pdf.set_font("Arial", size=12)
-            notes_text = "Font missing. Notes in English/Latin only:\n" + \
-                         notes_text.encode('ascii', 'ignore').decode('ascii')
+            notes_text = notes_text.encode('ascii', 'ignore').decode('ascii')
             
         pdf.multi_cell(0, 10, txt=notes_text)
         
-        # Return as bytes for the Streamlit button
-        return pdf.output() 
+        # Convert the output to standard bytes to prevent StreamlitAPIException
+        pdf_output = pdf.output()
+        return bytes(pdf_output) 
+        # --- CRITICAL FIX END ---
+        
     except Exception as e:
-        st.error(f"PDF Error: {e}")
+        print(f"PDF Error: {e}")
         return None
 
 # --- SESSION STATE ---
