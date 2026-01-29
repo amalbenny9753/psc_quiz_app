@@ -35,12 +35,22 @@ def generate_revision_notes(wrong_questions, language):
     response = model.generate_content(prompt)
     return response.text
 
+# def create_pdf(notes_text):
+#     pdf = FPDF()
+#     pdf.add_page()
+#     pdf.set_font("Arial", size=12)
+#     # multi_cell handles long text wrapping
+#     pdf.multi_cell(0, 10, txt=notes_text.encode('latin-1', 'replace').decode('latin-1'))
+#     return pdf.output()
+
+
+
 def create_pdf(notes_text):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    # multi_cell handles long text wrapping
-    pdf.multi_cell(0, 10, txt=notes_text.encode('latin-1', 'replace').decode('latin-1'))
+    pdf.add_font('Malayalam', '', 'NotoSansMalayalam-Regular.ttf')
+    pdf.set_font('Malayalam', size=12)
+    pdf.multi_cell(0, 10, txt=notes_text)
     return pdf.output()
 
 # --- SESSION STATE ---
