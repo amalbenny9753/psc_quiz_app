@@ -15,10 +15,10 @@ def initialize_gemini():
             return None
         
         genai.configure(api_key=api_key)
-        return genai.GenerativeModel('gemini-3-flash-preview')  
-    except Exception as e: 
-        st.error(f"Failed to initialize Gemini API: {str(e)}") 
-        return None  
+        return genai.GenerativeModel('gemini-3-flash-preview')
+    except Exception as e:
+        st.error(f"Failed to initialize Gemini API: {str(e)}")
+        return None
 
 model = initialize_gemini()
 
@@ -167,6 +167,39 @@ with st.sidebar:
             st.session_state.current_idx = 0
             st.session_state.quiz_submitted = False
             st.rerun()
+        
+        # Question Navigation Grid
+        st.markdown("---")
+        st.subheader("🔢 Jump to Question")
+        
+        # Create grid of question numbers
+        cols_per_row = 5
+        for row_start in range(0, total_q, cols_per_row):
+            cols = st.columns(cols_per_row)
+            for i, col in enumerate(cols):
+                q_num = row_start + i
+                if q_num < total_q:
+                    with col:
+                        # Determine button style based on state
+                        if q_num in st.session_state.user_answers:
+                            # Answered - check if correct
+                            if st.session_state.user_answers[q_num] == st.session_state.questions[q_num]['answer']:
+                                button_label = f"✓ {q_num + 1}"
+                                button_type = "secondary"
+                            else:
+                                button_label = f"✗ {q_num + 1}"
+                                button_type = "secondary"
+                        else:
+                            button_label = f"{q_num + 1}"
+                            button_type = "secondary"
+                        
+                        # Current question highlight
+                        if q_num == idx:
+                            button_label = f"► {q_num + 1}"
+                        
+                        if st.button(button_label, key=f"nav_{q_num}", type=button_type, use_container_width=True):
+                            st.session_state.current_idx = q_num
+                            st.rerun()
 
 # --- MAIN QUIZ INTERFACE ---
 if st.session_state.questions:
@@ -230,30 +263,20 @@ if st.session_state.questions:
     col1, col2, col3 = st.columns([1, 1, 1])
     
     with col1:
-        if st.button("⬅️ Previous", disabled=idx == 0, use_container_width=True):
+        if st.button("⬅️ Previous", disabled=idx == 0, use_container_width=True, key=f"prev_{idx}"):
             st.session_state.current_idx -= 1
             st.rerun()
     
     with col2:
-        # Jump to specific question
-        jump_to = st.number_input(
-            "Jump to Q#",
-            min_value=1,
-            max_value=len(questions),
-            value=idx + 1,
-            key="jump_input"
-        )
-        if jump_to != idx + 1:
-            st.session_state.current_idx = jump_to - 1
-            st.rerun()
+        st.write(f"**{idx + 1} / {len(questions)}**")
     
     with col3:
         if idx < len(questions) - 1:
-            if st.button("Next ➡️", use_container_width=True):
+            if st.button("Next ➡️", use_container_width=True, key=f"next_{idx}"):
                 st.session_state.current_idx += 1
                 st.rerun()
         else:
-            if st.button("📝 Finish", type="primary", use_container_width=True):
+            if st.button("📝 Finish", type="primary", use_container_width=True, key=f"finish_{idx}"):
                 st.session_state.quiz_submitted = True
                 st.rerun()
     
