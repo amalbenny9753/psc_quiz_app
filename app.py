@@ -6,7 +6,7 @@ from fpdf import FPDF
 # --- CONFIGURATION ---
 GEN_API_KEY = st.secrets["GEMINI_KEY"]
 genai.configure(api_key=GEN_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash') # Use the stable flash model
+model = genai.GenerativeModel('gemini-3-flash-preview')
 
 def get_psc_questions(topic, language, count, level):
     prompt = f"""
