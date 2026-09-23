@@ -15,7 +15,7 @@ def initialize_gemini():
             return None
         
         genai.configure(api_key=api_key)
-        return genai.GenerativeModel('gemini-2.5-flash')
+        return genai.GenerativeModel('gemini-1.5-flash')
     except Exception as e:
         st.error(f"Failed to initialize Gemini API: {str(e)}")
         return None
@@ -23,18 +23,18 @@ def initialize_gemini():
 model = initialize_gemini()
 
 def get_psc_questions(topic: str, language: str, count: int, level: str) -> Optional[List[Dict]]:
-    """Generate PSC questions using Gemini API with Search Grounding & Strict Accuracy Verification"""
+    """Generate PSC questions using Gemini API with Strict Accuracy Verification"""
     if not model:
         st.error("Model not initialized. Please check your API key.")
         return None
     
     prompt = f"""
-    You are a senior Kerala PSC exam expert.
+    You are a senior Kerala PSC exam expert and question paper maker.
     Generate {count} highly accurate Kerala PSC exam questions (2021-2026 pattern) on '{topic}' for {level} level.
     Language: {language}.
     
     CRITICAL ACCURACY INSTRUCTIONS:
-    1. Search the web and double-check every Indian History, Constitution, and Education Commission fact (e.g., Radhakrishnan Commission, Kothari Commission) against authentic reference sources.
+    1. Double-check every Indian History, Constitution, and Education Commission fact (e.g., Radhakrishnan Commission, Kothari Commission) against standard reference sources (SCERT/NCERT/PSC Bulletin).
     2. Ensure the selected 'answer' strictly matches established historical and factual consensus (e.g., Radhakrishnan Commission recommended max 1500 students for affiliated colleges).
     3. Make options plausible distractors and explanations concise and factual in {language}.
     
@@ -50,10 +50,9 @@ def get_psc_questions(topic: str, language: str, count: int, level: str) -> Opti
     """
     
     try:
-        # Enabled Google Search Grounding and low temperature for accuracy
+        # Strict low temperature for factual precision without extra unsupported tools
         response = model.generate_content(
             prompt,
-            tools=[{"google_search": {}}],
             generation_config=genai.types.GenerationConfig(
                 temperature=0.1
             )
