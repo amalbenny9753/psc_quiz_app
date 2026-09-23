@@ -29,7 +29,7 @@ def get_psc_questions(topic: str, language: str, count: int, level: str) -> Opti
         return None
     
     prompt = f"""
-    Generate {count} realistic Kerala PSC exam questions (2021-2025 pattern) on '{topic}' for {level} level.
+    Generate {count} realistic Kerala PSC exam questions (2021-2026 pattern) on '{topic}' for {level} level.
     Language: {language}.
     
     Important requirements:
@@ -128,7 +128,7 @@ with st.sidebar:
         "Exam Level",
         ["10th/SSLC", "Plus Two", "Degree", "Post Graduate"]
     )
-    num_q = st.slider("Number of Questions", 5, 30, 10)
+    num_q = st.slider("Number of Questions", 5, 100, 10)
     topic = st.text_input("Topic", "Kerala History", placeholder="e.g., Indian Constitution")
     
     st.markdown("---")
