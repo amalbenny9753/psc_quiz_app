@@ -29,13 +29,13 @@ def get_psc_questions(topic: str, language: str, count: int, level: str) -> Opti
         return None
     
     prompt = f"""
-    Generate {count} highly accurate and realistic Kerala PSC exam questions (2021-2026 pattern) on '{topic}' for {level} level.
+    Generate {count} realistic Kerala PSC exam questions (2021-2026 pattern) on '{topic}' for {level} level.
     Language: {language}.
     
     Important requirements:
-    1. Questions and answers MUST be 100% factually correct and verified according to standard Kerala PSC syllabus.
-    2. Options should be plausible distractors.
-    3. Explanation should be concise and accurate in {language}.
+    1. Questions should be factual and exam-oriented
+    2. Options should be plausible distractors
+    3. Explanation should be concise and informative
     
     Format as a JSON list of dictionaries:
     [{{
@@ -49,14 +49,7 @@ def get_psc_questions(topic: str, language: str, count: int, level: str) -> Opti
     """
     
     try:
-        # Set temperature to 0.2 for strict factual accuracy
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.2
-            )
-        )
-        
+        response = model.generate_content(prompt)
         # Clean response text
         text = response.text.strip()
         
