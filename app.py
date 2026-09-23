@@ -15,7 +15,7 @@ def initialize_gemini():
             return None
         
         genai.configure(api_key=api_key)
-        return genai.GenerativeModel('gemini-1.5-flash')
+        return genai.GenerativeModel('gemini-3-flash-preview')
     except Exception as e:
         st.error(f"Failed to initialize Gemini API: {str(e)}")
         return None
@@ -23,20 +23,19 @@ def initialize_gemini():
 model = initialize_gemini()
 
 def get_psc_questions(topic: str, language: str, count: int, level: str) -> Optional[List[Dict]]:
-    """Generate PSC questions using Gemini API with Strict Accuracy Verification"""
+    """Generate PSC questions using Gemini API with robust error handling"""
     if not model:
         st.error("Model not initialized. Please check your API key.")
         return None
     
     prompt = f"""
-    You are a senior Kerala PSC exam expert and question paper maker.
-    Generate {count} highly accurate Kerala PSC exam questions (2021-2026 pattern) on '{topic}' for {level} level.
+    Generate {count} highly accurate and realistic Kerala PSC exam questions (2021-2026 pattern) on '{topic}' for {level} level.
     Language: {language}.
     
-    CRITICAL ACCURACY INSTRUCTIONS:
-    1. Double-check every Indian History, Constitution, and Education Commission fact (e.g., Radhakrishnan Commission, Kothari Commission) against standard reference sources (SCERT/NCERT/PSC Bulletin).
-    2. Ensure the selected 'answer' strictly matches established historical and factual consensus (e.g., Radhakrishnan Commission recommended max 1500 students for affiliated colleges).
-    3. Make options plausible distractors and explanations concise and factual in {language}.
+    Important requirements:
+    1. Questions and answers MUST be 100% factually correct and verified according to standard Kerala PSC syllabus.
+    2. Options should be plausible distractors.
+    3. Explanation should be concise and accurate in {language}.
     
     Format as a JSON list of dictionaries:
     [{{
@@ -50,11 +49,11 @@ def get_psc_questions(topic: str, language: str, count: int, level: str) -> Opti
     """
     
     try:
-        # Strict low temperature for factual precision without extra unsupported tools
+        # Set temperature to 0.2 for strict factual accuracy
         response = model.generate_content(
             prompt,
             generation_config=genai.types.GenerationConfig(
-                temperature=0.1
+                temperature=0.2
             )
         )
         
@@ -136,13 +135,14 @@ with st.sidebar:
         "Exam Level",
         ["10th/SSLC", "Plus Two", "Degree", "Post Graduate"]
     )
+    # Question Limit set from 5 to 200
     num_q = st.slider("Number of Questions", 5, 200, 10)
     topic = st.text_input("Topic", "Kerala History", placeholder="e.g., Indian Constitution")
     
     st.markdown("---")
     
     if st.button("🎯 Generate New Quiz", type="primary", use_container_width=True):
-        with st.spinner("Generating questions with fact verification... This may take a moment."):
+        with st.spinner("Generating questions... This may take a moment."):
             questions = get_psc_questions(topic, lang, num_q, level)
             
             if questions:
@@ -150,7 +150,7 @@ with st.sidebar:
                 st.session_state.current_idx = 0
                 st.session_state.user_answers = {}
                 st.session_state.quiz_submitted = False
-                st.success(f"✅ Generated {len(questions)} verified questions!")
+                st.success(f"✅ Generated {len(questions)} questions!")
                 st.rerun()
     
     # Progress Display
