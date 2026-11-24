@@ -82,6 +82,16 @@ SVG_ICONS = {
         '<circle cx="12" cy="12" r="9.5" fill="#E0E7FF"/>'
         '<polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="#6366F1"/>'
         '</svg>'
+    ),
+    "cracker": (
+        '<svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">'
+        '<path d="M6 26L14 12L20 18L6 26Z" fill="#F59E0B" stroke="#B45309" stroke-width="1.8" stroke-linejoin="round"/>'
+        '<path d="M11 17L15 21" stroke="#FEF08A" stroke-width="2" stroke-linecap="round"/>'
+        '<circle cx="22" cy="8" r="2.2" fill="#EC4899"/>'
+        '<circle cx="26" cy="13" r="2" fill="#10B981"/>'
+        '<circle cx="18" cy="6" r="1.8" fill="#3B82F6"/>'
+        '<path d="M23 4V6.5M25 18H27.5" stroke="#F97316" stroke-width="2" stroke-linecap="round"/>'
+        '</svg>'
     )
 }
 
@@ -93,7 +103,7 @@ def icon_heading(icon_key: str, title: str, color: str = "#0F172A", size: str = 
     </div>
     """)
 
-# --- COLORFUL STYLING ---
+# --- STYLING + RIGHT ANSWER CRACKER ANIMATION ---
 render_html("""
 <style>
 footer {visibility: hidden;}
@@ -103,8 +113,12 @@ footer {visibility: hidden;}
 .stDeployButton {display: none !important;}
 #MainMenu {visibility: hidden;}
 
+/* Keep header & sidebar toggle visible and usable */
 header[data-testid="stHeader"] {
 background-color: transparent !important;
+visibility: visible !important;
+}
+[data-testid="stSidebar"] {
 visibility: visible !important;
 }
 [data-testid="stSidebarCollapsedControl"] {
@@ -226,6 +240,47 @@ color: #1e1b4b;
 margin: 0;
 }
 
+/* Telegram-poll style right-answer cracker burst */
+@keyframes crackerPop {
+0% { transform: scale(0.75) rotate(-8deg); opacity: 0.3; }
+50% { transform: scale(1.12) rotate(6deg); opacity: 1; }
+100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes sparkBurst {
+0% { transform: translate(0, 0) scale(0.4); opacity: 1; }
+100% { transform: translate(var(--tx), var(--ty)) scale(1.15); opacity: 0; }
+}
+.cracker-banner {
+position: relative;
+overflow: hidden;
+display: flex;
+align-items: center;
+gap: 10px;
+background: linear-gradient(120deg, #dcfce7 0%, #d1fae5 55%, #fef9c3 100%);
+border: 1.5px solid #34d399;
+border-radius: 14px;
+padding: 0.75rem 1rem;
+margin: 0.5rem 0 0.75rem 0;
+color: #065f46;
+font-weight: 700;
+box-shadow: 0 6px 16px rgba(16, 185, 129, 0.16);
+}
+.cracker-icon-anim {
+animation: crackerPop 0.45s ease-out;
+display: inline-flex;
+align-items: center;
+}
+.spark-dot {
+position: absolute;
+right: 28px;
+top: 50%;
+width: 8px;
+height: 8px;
+border-radius: 50%;
+animation: sparkBurst 0.65s ease-out forwards;
+pointer-events: none;
+}
+
 div.stButton > button {
 text-align: left !important;
 justify-content: flex-start !important;
@@ -263,6 +318,24 @@ border-radius: 14px;
 padding: 1rem 1.15rem;
 margin-top: 0.85rem;
 color: #78350f;
+}
+
+.score-card {
+background: #ffffff;
+border: 1.5px solid #c7d2fe;
+border-radius: 20px;
+padding: 1.5rem;
+box-shadow: 0 10px 24px rgba(67, 56, 202, 0.1);
+margin-bottom: 1rem;
+}
+.improve-box {
+background: #fff1f2;
+border: 1.5px solid #fecdd3;
+border-left: 6px solid #e11d48;
+border-radius: 14px;
+padding: 1rem 1.15rem;
+color: #881337;
+margin-top: 0.75rem;
 }
 
 .feature-card-1 {
@@ -391,19 +464,54 @@ def get_psc_questions(topic: str, language: str, count: int, level: str) -> Opti
         st.error(f"Error generating questions: {str(e)}")
         return None
 
-def calculate_score() -> tuple:
-    """Calculate current score and percentage"""
-    if not st.session_state.user_answers:
-        return 0, 0.0
+def calculate_full_summary() -> dict:
+    """Calculate detailed quiz summary including attempt, correct, wrong, unanswered, and weak questions"""
+    questions = st.session_state.questions or []
+    total = len(questions)
+    user_answers = st.session_state.user_answers
 
-    correct = sum(
-        1 for idx, answer in st.session_state.user_answers.items()
-        if answer == st.session_state.questions[idx]['answer']
-    )
-    total = len(st.session_state.user_answers)
-    percentage = (correct / total * 100) if total > 0 else 0
+    correct = 0
+    wrong = 0
+    wrong_items = []
 
-    return correct, percentage
+    for idx, q in enumerate(questions):
+        if idx in user_answers:
+            if user_answers[idx] == q["answer"]:
+                correct += 1
+            else:
+                wrong += 1
+                wrong_items.append((idx + 1, q["question"], user_answers[idx], q["answer"]))
+
+    unanswered = total - (correct + wrong)
+    attempted = correct + wrong
+    accuracy_on_attempted = (correct / attempted * 100) if attempted > 0 else 0.0
+    score_percent = (correct / total * 100) if total > 0 else 0.0
+
+    return {
+        "attempt": st.session_state.attempt_count,
+        "total": total,
+        "attempted": attempted,
+        "correct": correct,
+        "wrong": wrong,
+        "unanswered": unanswered,
+        "accuracy": accuracy_on_attempted,
+        "score_percent": score_percent,
+        "wrong_items": wrong_items
+    }
+
+def show_cracker_burst():
+    """Lightweight Telegram-poll style cracker burst for a right answer"""
+    render_html(f"""
+    <div class="cracker-banner">
+    <span class="cracker-icon-anim">{SVG_ICONS["cracker"]}</span>
+    <span>ശരിയായ ഉത്തരം! മികച്ച പ്രകടനം</span>
+    <span class="spark-dot" style="background:#ef4444; --tx:-24px; --ty:-22px;"></span>
+    <span class="spark-dot" style="background:#10b981; --tx:24px; --ty:-20px;"></span>
+    <span class="spark-dot" style="background:#f59e0b; --tx:-20px; --ty:20px;"></span>
+    <span class="spark-dot" style="background:#3b82f6; --tx:22px; --ty:22px;"></span>
+    <span class="spark-dot" style="background:#ec4899; --tx:0px; --ty:-28px;"></span>
+    </div>
+    """)
 
 # --- SESSION STATE INITIALIZATION ---
 if "questions" not in st.session_state:
@@ -414,6 +522,10 @@ if "user_answers" not in st.session_state:
     st.session_state.user_answers = {}
 if "quiz_submitted" not in st.session_state:
     st.session_state.quiz_submitted = False
+if "attempt_count" not in st.session_state:
+    st.session_state.attempt_count = 1
+if "just_answered_idx" not in st.session_state:
+    st.session_state.just_answered_idx = None
 
 if "cfg_lang" not in st.session_state:
     st.session_state.cfg_lang = "English"
@@ -437,7 +549,8 @@ def run_generate_quiz(topic_val, lang_val, count_val, level_val):
             st.session_state.current_idx = 0
             st.session_state.user_answers = {}
             st.session_state.quiz_submitted = False
-            st.success(f"Generated {len(questions)} questions.")
+            st.session_state.attempt_count = 1
+            st.session_state.just_answered_idx = None
             st.rerun()
 
 # --- HERO HEADER ---
@@ -482,26 +595,28 @@ with st.sidebar:
         st.divider()
         icon_heading("chart", "Session Tracker", "#0F766E")
 
-        total_q = len(st.session_state.questions)
-        answered = len(st.session_state.user_answers)
-        progress = answered / total_q
+        summary = calculate_full_summary()
+        progress = summary["attempted"] / summary["total"] if summary["total"] > 0 else 0
 
+        st.caption(f"Attempt: **#{summary['attempt']}**")
         st.progress(progress)
-        st.caption(f"Answered: **{answered} / {total_q}**")
+        st.caption(f"Attempted: **{summary['attempted']} / {summary['total']}**")
 
-        if answered > 0:
-            correct, percentage = calculate_score()
-            st.metric("Current Score", f"{correct}/{answered}", f"{percentage:.1f}%")
+        if summary["attempted"] > 0:
+            st.metric("Current Score", f"{summary['correct']}/{summary['attempted']}", f"{summary['accuracy']:.1f}%")
 
         if st.button("Reset Quiz", use_container_width=True, key="sb_reset_btn"):
             st.session_state.user_answers = {}
             st.session_state.current_idx = 0
             st.session_state.quiz_submitted = False
+            st.session_state.just_answered_idx = None
+            st.session_state.attempt_count += 1
             st.rerun()
 
         st.divider()
         icon_heading("grid", "Question Palette", "#BE123C")
 
+        total_q = len(st.session_state.questions)
         cols_per_row = 5
         for row_start in range(0, total_q, cols_per_row):
             cols = st.columns(cols_per_row)
@@ -522,6 +637,7 @@ with st.sidebar:
 
                         if st.button(button_label, key=f"nav_{q_num}", use_container_width=True):
                             st.session_state.current_idx = q_num
+                            st.session_state.quiz_submitted = False
                             st.rerun()
 
 # --- DIRECT IN-PAGE SETUP PANEL ---
@@ -548,119 +664,179 @@ with st.expander("Quiz Setup Panel", expanded=(st.session_state.questions is Non
     if st.button("Generate New Quiz", type="primary", use_container_width=True, key="m_gen_btn"):
         run_generate_quiz(m_topic, m_lang, m_num_q, m_level)
 
-# --- MAIN QUIZ INTERFACE ---
+# --- MAIN QUIZ / SCORE INTERFACE ---
 if st.session_state.questions:
     questions = st.session_state.questions
-    idx = st.session_state.current_idx
-    q = questions[idx]
 
-    answered_count = len(st.session_state.user_answers)
-    already_answered = idx in st.session_state.user_answers
-    selected = st.session_state.user_answers.get(idx)
+    # Show ONLY Score Page when quiz is submitted
+    if st.session_state.quiz_submitted:
+        s = calculate_full_summary()
 
-    if already_answered:
-        if selected == q['answer']:
-            status_badge = f'<span class="pill pill-green">{SVG_ICONS["check"]} Correct</span>'
-        else:
-            status_badge = f'<span class="pill pill-red">{SVG_ICONS["cross"]} Incorrect</span>'
-    else:
-        status_badge = '<span class="pill pill-amber">Unanswered</span>'
-
-    render_html(f"""
-    <div class="status-strip">
-    <div style="display:flex; flex-wrap:wrap; gap:6px;">
-    <span class="pill">Q {idx + 1} / {len(questions)}</span>
-    <span class="pill pill-teal">{st.session_state.cfg_level}</span>
-    <span class="pill pill-amber">{st.session_state.cfg_topic}</span>
-    </div>
-    <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
-    <span class="pill">Attempted: {answered_count}/{len(questions)}</span>
-    {status_badge}
-    </div>
-    </div>
-    """)
-
-    render_html(f"""
-    <div class="question-card">
-    <p class="question-text">{q['question']}</p>
-    </div>
-    """)
-
-    st.markdown("**Select an Option**")
-    for i, option in enumerate(q['options']):
-        label_prefix = f"{chr(65 + i)})"
-        if already_answered:
-            if option == q['answer']:
-                st.success(f"**{label_prefix} {option}** — Correct Answer")
-            elif option == selected:
-                st.error(f"**{label_prefix} {option}** — Your Selection")
-            else:
-                render_html(
-                    f"<div style='padding: 0.55rem 0.85rem; color: #64748b; background:#ffffff; border-radius:10px; margin-bottom:0.35rem;'>{label_prefix} {option}</div>"
-                )
-        else:
-            button_type = "primary" if selected == option else "secondary"
-            if st.button(
-                f"{label_prefix}  {option}",
-                key=f"btn_{idx}_{i}",
-                use_container_width=True,
-                type=button_type
-            ):
-                st.session_state.user_answers[idx] = option
-                st.rerun()
-
-    if already_answered:
         render_html(f"""
-        <div class="exp-box">
-        <div style="margin-top:2px;">{SVG_ICONS["bulb"]}</div>
-        <div><strong>Explanation:</strong> {q.get('explanation', 'No explanation available.')}</div>
+        <div class="score-card">
+        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; margin-bottom:1rem;">
+        <h2 style="margin:0; color:#1e1b4b;">Exam Score Report</h2>
+        <span class="pill">Attempt #{s['attempt']}</span>
+        <span class="pill pill-teal">{st.session_state.cfg_level}</span>
+        <span class="pill pill-amber">{st.session_state.cfg_topic}</span>
+        </div>
         </div>
         """)
 
-    st.divider()
-    nav1, nav2, nav3 = st.columns([1.2, 1, 1.2])
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            st.metric("Attempt", f"#{s['attempt']}")
+        with c2:
+            st.metric("ശരിയായവ (Right)", f"{s['correct']} / {s['total']}")
+        with c3:
+            st.metric("തെറ്റിയവ (Wrong)", f"{s['wrong']}")
+        with c4:
+            st.metric("Unanswered", f"{s['unanswered']}")
 
-    with nav1:
-        if st.button("Previous", disabled=idx == 0, use_container_width=True, key=f"prev_{idx}"):
-            st.session_state.current_idx -= 1
-            st.rerun()
+        st.markdown("")
+        st.progress(s["score_percent"] / 100.0 if s["total"] > 0 else 0.0)
+        st.caption(f"Overall Score: **{s['correct']}/{s['total']} ({s['score_percent']:.1f}%)**")
 
-    with nav2:
-        render_html(
-            f"<div style='text-align:center; padding-top:0.5rem; font-weight:700; color:#4338ca;'>{idx + 1} / {len(questions)}</div>"
-        )
+        # Areas to Improve section
+        if s["wrong_items"] or s["unanswered"] > 0:
+            items_html = ""
+            for q_no, q_txt, u_ans, c_ans in s["wrong_items"]:
+                items_html += (
+                    f"<div style='margin-bottom:0.65rem; padding-bottom:0.5rem; border-bottom:1px dashed #fda4af;'>"
+                    f"<strong>Q{q_no}:</strong> {q_txt}<br>"
+                    f"<span style='color:#be123c;'>നിങ്ങളുടെ ഉത്തരം:</span> {u_ans} &nbsp;|&nbsp; "
+                    f"<span style='color:#15803d;'>ശരിയായ ഉത്തരം:</span> <strong>{c_ans}</strong>"
+                    f"</div>"
+                )
 
-    with nav3:
-        if idx < len(questions) - 1:
-            if st.button("Next", use_container_width=True, key=f"next_{idx}"):
-                st.session_state.current_idx += 1
-                st.rerun()
+            extra_note = ""
+            if s["unanswered"] > 0:
+                extra_note = f"<p style='margin:0.4rem 0 0 0;'><strong>Unanswered Questions:</strong> {s['unanswered']} ചോദ്യങ്ങൾക്ക് ഉത്തരം നൽകിയിട്ടില്ല — സമയം ക്രമീകരിച്ച് മുഴുവൻ ചോദ്യങ്ങളും ശ്രമിക്കുക.</p>"
+
+            render_html(f"""
+            <div class="improve-box">
+            <h4 style="margin:0 0 0.5rem 0; color:#9f1239;">Improve ചെയ്യേണ്ട Areas ({st.session_state.cfg_topic})</h4>
+            <p style="margin:0 0 0.6rem 0;">താഴെ പറയുന്ന ചോദ്യങ്ങളിലെ ആശയങ്ങൾ ഒരിക്കൽ കൂടി റിവൈസ് ചെയ്യുക:</p>
+            {items_html}
+            {extra_note}
+            </div>
+            """)
         else:
-            if st.button("Finish Quiz", type="primary", use_container_width=True, key=f"finish_{idx}"):
-                st.session_state.quiz_submitted = True
+            st.success("എല്ലാ ചോദ്യങ്ങളും കൃത്യമായി ഉത്തരം നൽകി! ഇപ്പോൾ Improve ചെയ്യേണ്ട ഭാഗങ്ങൾ ഒന്നും ഇല്ല.")
+
+        st.markdown("")
+        b1, b2 = st.columns(2)
+        with b1:
+            if st.button("Back to Questions", use_container_width=True, key="back_to_q_btn"):
+                st.session_state.quiz_submitted = False
+                st.rerun()
+        with b2:
+            if st.button("Start Next Attempt", type="primary", use_container_width=True, key="next_attempt_btn"):
+                st.session_state.user_answers = {}
+                st.session_state.current_idx = 0
+                st.session_state.quiz_submitted = False
+                st.session_state.just_answered_idx = None
+                st.session_state.attempt_count += 1
                 st.rerun()
 
-    if st.session_state.quiz_submitted and len(st.session_state.user_answers) == len(questions):
-        st.divider()
-        st.balloons()
+    else:
+        idx = st.session_state.current_idx
+        q = questions[idx]
 
-        correct, percentage = calculate_score()
-        total = len(questions)
+        summary = calculate_full_summary()
+        already_answered = idx in st.session_state.user_answers
+        selected = st.session_state.user_answers.get(idx)
 
-        st.success("Quiz Completed!")
-
-        m1, m2, m3 = st.columns(3)
-        with m1:
-            st.metric("Score", f"{correct}/{total}")
-        with m2:
-            st.metric("Accuracy", f"{percentage:.1f}%")
-        with m3:
-            if percentage >= 80:
-                st.metric("Performance", "Excellent")
-            elif percentage >= 60:
-                st.metric("Performance", "Good")
+        if already_answered:
+            if selected == q['answer']:
+                status_badge = f'<span class="pill pill-green">{SVG_ICONS["check"]} Correct</span>'
             else:
-                st.metric("Performance", "Keep Going")
+                status_badge = f'<span class="pill pill-red">{SVG_ICONS["cross"]} Incorrect</span>'
+        else:
+            status_badge = '<span class="pill pill-amber">Unanswered</span>'
+
+        render_html(f"""
+        <div class="status-strip">
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+        <span class="pill">Attempt #{summary['attempt']}</span>
+        <span class="pill">Q {idx + 1} / {len(questions)}</span>
+        <span class="pill pill-teal">{st.session_state.cfg_level}</span>
+        <span class="pill pill-amber">{st.session_state.cfg_topic}</span>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
+        <span class="pill">Attempted: {summary['attempted']}/{len(questions)}</span>
+        {status_badge}
+        </div>
+        </div>
+        """)
+
+        render_html(f"""
+        <div class="question-card">
+        <p class="question-text">{q['question']}</p>
+        </div>
+        """)
+
+        # Show cracker animation only right when this question is answered correctly
+        if already_answered and selected == q['answer'] and st.session_state.just_answered_idx == idx:
+            show_cracker_burst()
+
+        st.markdown("**Select an Option**")
+        for i, option in enumerate(q['options']):
+            label_prefix = f"{chr(65 + i)})"
+            if already_answered:
+                if option == q['answer']:
+                    st.success(f"**{label_prefix} {option}** — Correct Answer")
+                elif option == selected:
+                    st.error(f"**{label_prefix} {option}** — Your Selection")
+                else:
+                    render_html(
+                        f"<div style='padding: 0.55rem 0.85rem; color: #64748b; background:#ffffff; border-radius:10px; margin-bottom:0.35rem;'>{label_prefix} {option}</div>"
+                    )
+            else:
+                button_type = "primary" if selected == option else "secondary"
+                if st.button(
+                    f"{label_prefix}  {option}",
+                    key=f"btn_{idx}_{i}",
+                    use_container_width=True,
+                    type=button_type
+                ):
+                    st.session_state.user_answers[idx] = option
+                    st.session_state.just_answered_idx = idx if option == q['answer'] else None
+                    st.rerun()
+
+        if already_answered:
+            render_html(f"""
+            <div class="exp-box">
+            <div style="margin-top:2px;">{SVG_ICONS["bulb"]}</div>
+            <div><strong>Explanation:</strong> {q.get('explanation', 'No explanation available.')}</div>
+            </div>
+            """)
+
+        st.divider()
+        nav1, nav2, nav3 = st.columns([1.2, 1, 1.2])
+
+        with nav1:
+            if st.button("Previous", disabled=idx == 0, use_container_width=True, key=f"prev_{idx}"):
+                st.session_state.current_idx -= 1
+                st.session_state.just_answered_idx = None
+                st.rerun()
+
+        with nav2:
+            render_html(
+                f"<div style='text-align:center; padding-top:0.5rem; font-weight:700; color:#4338ca;'>{idx + 1} / {len(questions)}</div>"
+            )
+
+        with nav3:
+            if idx < len(questions) - 1:
+                if st.button("Next", use_container_width=True, key=f"next_{idx}"):
+                    st.session_state.current_idx += 1
+                    st.session_state.just_answered_idx = None
+                    st.rerun()
+            else:
+                if st.button("Finish Quiz", type="primary", use_container_width=True, key=f"finish_{idx}"):
+                    st.session_state.quiz_submitted = True
+                    st.session_state.just_answered_idx = None
+                    st.rerun()
 
 else:
     c1, c2, c3 = st.columns(3)
