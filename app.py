@@ -9,6 +9,14 @@ import textwrap
 from datetime import datetime
 from typing import List, Dict, Optional
 
+# Optional helper used to keep the Attempt Log in the phone's browser storage (survives closing the app).
+# If the package is not installed the app still works, but the log resets on every fresh open.
+try:
+    from streamlit_js_eval import streamlit_js_eval
+    HAS_JS_EVAL = True
+except Exception:
+    HAS_JS_EVAL = False
+
 # --- PAGE CONFIG ---
 st.set_page_config(
     page_title="PSC Pro Quiz",
@@ -675,6 +683,8 @@ if "current_attempt_logged" not in st.session_state:
     st.session_state.current_attempt_logged = False
 if "just_answered_idx" not in st.session_state:
     st.session_state.just_answered_idx = None
+if "logs_loaded" not in st.session_state:
+    st.session_state.logs_loaded = False
 if "pending_start" not in st.session_state:
     st.session_state.pending_start = None
 if "close_sidebar" not in st.session_state:
@@ -688,6 +698,26 @@ if "cfg_num_q" not in st.session_state:
     st.session_state.cfg_num_q = 10
 if "cfg_topic" not in st.session_state:
     st.session_state.cfg_topic = "Kerala History"
+
+# --- LOAD SAVED ATTEMPT LOG FROM THE BROWSER (once per fresh open) ---
+LOG_STORAGE_KEY = "psc_attempt_logs_v1"
+LOG_FIELDS = ("time", "attempt", "topic", "level", "lang", "right", "wrong", "total", "percent")
+
+if HAS_JS_EVAL and not st.session_state.logs_loaded:
+    # Returns None on the very first run; the browser answers a moment later and the app reruns by itself.
+    _stored = streamlit_js_eval(
+        js_expressions=f"localStorage.getItem('{LOG_STORAGE_KEY}') || '[]'",
+        key="psc_load_logs",
+    )
+    if _stored is not None:
+        try:
+            _loaded = json.loads(_stored) if isinstance(_stored, str) else list(_stored)
+        except Exception:
+            _loaded = []
+        _loaded = [x for x in _loaded if isinstance(x, dict) and all(f in x for f in LOG_FIELDS)]
+        # anything already logged in this session stays on top (newest first)
+        st.session_state.attempt_logs = st.session_state.attempt_logs + _loaded
+        st.session_state.logs_loaded = True
 
 LANG_OPTIONS = ["English", "Malayalam"]
 LEVEL_OPTIONS = ["10th/SSLC", "Plus Two", "Degree", "Post Graduate"]
@@ -1012,6 +1042,13 @@ if st.session_state.pending_start:
     _topic, _lang, _count, _level = st.session_state.pending_start
     st.session_state.pending_start = None
     close_sidebar_js()  # collapse sidebar immediately, before the slow generation starts
+    # While generating, hide the old page content (score page, old question...) so only the spinner shows.
+    # This <style> exists only in this run, so everything returns to normal after the rerun.
+    render_html("""
+    <style>
+    .block-container div[data-stale="true"] { display: none !important; }
+    </style>
+    """)
     start_quiz(_topic, _lang, _count, _level)  # reruns on success
 
 # --- AUTO-CLOSE SIDEBAR AFTER EXAM STARTS ---
@@ -1278,3 +1315,12 @@ else:
     <p style="margin:0; color:#e2e8f0; line-height:1.7;">മുകളിൽ ഇടതുവശത്തെ <strong>»</strong> ബട്ടൺ അമർത്തി സൈഡ്‌ബാർ തുറന്ന് Language, Exam Level, Number of Questions, Topic എന്നിവ സെറ്റ് ചെയ്ത് <strong>Start Exam</strong> ക്ലിക്ക് ചെയ്യുക.</p>
     </div>
     """)
+
+# --- SAVE ATTEMPT LOG TO THE BROWSER (runs only when the log changes) ---
+if HAS_JS_EVAL and st.session_state.logs_loaded:
+    _payload = json.dumps(st.session_state.attempt_logs[:500], ensure_ascii=False)
+    streamlit_js_eval(
+        js_expressions=f"localStorage.setItem('{LOG_STORAGE_KEY}', {json.dumps(_payload)})",
+        want_output=False,
+        key=f"psc_save_logs_{len(st.session_state.attempt_logs)}",
+    )
