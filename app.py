@@ -6,15 +6,107 @@ from typing import List, Dict, Optional
 # --- PAGE CONFIG ---
 st.set_page_config(
     page_title="PSC Pro Quiz",
-    page_icon="📚",
+    page_icon="📖",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- LIGHTWEIGHT LAYOUT STYLING (NO HEAVY JS / NO LAG) ---
+# --- CUSTOM SVG ICON LIBRARY ---
+SVG_ICONS = {
+    "brand": """
+    <svg width="34" height="34" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="36" height="36" rx="10" fill="rgba(255,255,255,0.18)"/>
+        <path d="M9 11.5C9 10.1193 10.1193 9 11.5 9H17V27H11.5C10.1193 27 9 25.8807 9 24.5V11.5Z" fill="#FDE047"/>
+        <path d="M27 11.5C27 10.1193 25.8807 9 24.5 9H19V27H24.5C25.8807 27 27 25.8807 27 24.5V11.5Z" fill="#5EEAD4"/>
+        <circle cx="18" cy="18" r="3.2" fill="#FB7185"/>
+    </svg>
+    """,
+    "gear": """
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3.2"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+    """,
+    "chart": """
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="12" width="4" height="8" rx="1.5" fill="#99F6E4"/>
+        <rect x="10" y="7" width="4" height="13" rx="1.5" fill="#5EEAD4"/>
+        <rect x="17" y="4" width="4" height="16" rx="1.5" fill="#2DD4BF"/>
+    </svg>
+    """,
+    "grid": """
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E11D48" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1.5" fill="#FFE4E6"/>
+        <rect x="14" y="3" width="7" height="7" rx="1.5" fill="#E0E7FF"/>
+        <rect x="3" y="14" width="7" height="7" rx="1.5" fill="#FEF3C7"/>
+        <rect x="14" y="14" width="7" height="7" rx="1.5" fill="#CCFBF1"/>
+    </svg>
+    """,
+    "bulb": """
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18h6" fill="#FEF08A"/>
+        <path d="M10 22h4"/>
+        <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14" fill="#FEF9C3"/>
+    </svg>
+    """,
+    "check": """
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#15803D" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10" fill="#DCFCE7"/>
+        <polyline points="8 12.5 10.8 15.3 16.2 9.5"/>
+    </svg>
+    """,
+    "cross": """
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10" fill="#FEE2E2"/>
+        <line x1="9" y1="9" x2="15" y2="15"/>
+        <line x1="15" y1="9" x2="9" y2="15"/>
+    </svg>
+    """,
+    "bolt": """
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="#F59E0B" stroke="#B45309" stroke-width="1.8" stroke-linejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+    </svg>
+    """,
+    "spark": """
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="#10B981" stroke="#047857" stroke-width="1.8" stroke-linejoin="round">
+        <path d="M12 2L14.8 9.2L22 12L14.8 14.8L12 22L9.2 14.8L2 12L9.2 9.2L12 2Z"/>
+    </svg>
+    """,
+    "compass": """
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9.5" fill="#E0E7FF"/>
+        <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="#6366F1"/>
+    </svg>
+    """,
+    "arrow_left": """
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    """,
+    "arrow_right": """
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="5" y1="12" x2="19" y2="12"/>
+        <polyline points="12 5 19 12 12 19"/>
+    </svg>
+    """
+}
+
+def icon_heading(icon_key: str, title: str, color: str = "#0F172A", size: str = "1.05rem"):
+    st.markdown(
+        f"""
+        <div style="display:flex; align-items:center; gap:8px; margin:0.2rem 0 0.6rem 0;">
+            {SVG_ICONS[icon_key]}
+            <span style="font-size:{size}; font-weight:700; color:{color};">{title}</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# --- COLORFUL STYLING ---
 st.markdown("""
 <style>
-    /* Hide footer and deploy/manage toolbar where possible */
+    /* Hide Streamlit default chrome */
     footer {visibility: hidden;}
     [data-testid="stToolbar"] {display: none !important;}
     [data-testid="stDecoration"] {display: none !important;}
@@ -22,7 +114,6 @@ st.markdown("""
     .stDeployButton {display: none !important;}
     #MainMenu {visibility: hidden;}
 
-    /* Keep header visible so sidebar toggle button stays usable */
     header[data-testid="stHeader"] {
         background-color: transparent !important;
         visibility: visible !important;
@@ -33,92 +124,122 @@ st.markdown("""
         z-index: 999999 !important;
     }
 
-    /* Main container spacing */
+    /* Vibrant soft background */
+    .stApp {
+        background: linear-gradient(180deg, #f0f9ff 0%, #fdf4ff 48%, #f0fdfa 100%);
+    }
+
+    /* Main container */
     .block-container {
-        max-width: 920px;
-        padding-top: 1.5rem;
+        max-width: 940px;
+        padding-top: 1.4rem;
         padding-bottom: 3rem;
     }
 
-    /* Hero banner */
+    /* Colorful Hero Banner */
     .quiz-hero {
-        background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #0d9488 100%);
+        background: linear-gradient(120deg, #4338ca 0%, #0ea5e9 52%, #10b981 100%);
         color: #ffffff;
-        padding: 1.4rem 1.75rem;
-        border-radius: 16px;
+        padding: 1.5rem 1.8rem;
+        border-radius: 20px;
         margin-bottom: 1.25rem;
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+        box-shadow: 0 12px 28px rgba(67, 56, 202, 0.22);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+    }
+    .quiz-hero-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
     }
     .quiz-hero h1 {
         margin: 0;
-        font-size: 1.75rem;
-        font-weight: 700;
+        font-size: 1.7rem;
+        font-weight: 800;
         color: #ffffff;
+        letter-spacing: -0.01em;
     }
     .quiz-hero p {
-        margin: 0.35rem 0 0 0;
-        font-size: 0.95rem;
-        color: #e2e8f0;
+        margin: 0.25rem 0 0 0;
+        font-size: 0.94rem;
+        color: #f0fdfa;
+        font-weight: 500;
     }
 
-    /* Top strip inside quiz */
+    /* Status strip */
     .status-strip {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.6rem;
+        gap: 0.55rem;
         align-items: center;
         justify-content: space-between;
-        background-color: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 0.75rem 1rem;
+        background: #ffffff;
+        border: 1.5px solid #e0e7ff;
+        border-radius: 14px;
+        padding: 0.8rem 1rem;
         margin-bottom: 1rem;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.06);
     }
     .pill {
-        display: inline-block;
-        padding: 0.25rem 0.7rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 0.28rem 0.75rem;
         border-radius: 999px;
         font-size: 0.82rem;
-        font-weight: 600;
-        background-color: #e0e7ff;
-        color: #1e3a8a;
+        font-weight: 700;
+        background-color: #eef2ff;
+        color: #4338ca;
+        border: 1px solid #c7d2fe;
+    }
+    .pill-teal {
+        background-color: #ccfbf1;
+        color: #0f766e;
+        border-color: #99f6e4;
+    }
+    .pill-amber {
+        background-color: #fef3c7;
+        color: #b45309;
+        border-color: #fde68a;
     }
     .pill-green {
         background-color: #dcfce7;
-        color: #166534;
+        color: #15803d;
+        border-color: #86efac;
     }
     .pill-red {
-        background-color: #fee2e2;
-        color: #991b1b;
+        background-color: #ffe4e6;
+        color: #be123c;
+        border-color: #fda4af;
     }
 
-    /* Smooth GPU-friendly question entrance animation */
-    @keyframes quickFadeSlide {
+    /* Smooth card animation */
+    @keyframes popSlideIn {
         from {
-            opacity: 0.4;
-            transform: translate3d(10px, 0, 0);
+            opacity: 0.35;
+            transform: translate3d(0, 8px, 0);
         }
         to {
             opacity: 1;
             transform: translate3d(0, 0, 0);
         }
     }
+
+    /* Question card */
     .question-card {
-        background-color: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-left: 5px solid #2563eb;
-        border-radius: 14px;
-        padding: 1.35rem 1.5rem;
+        background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
+        border: 1.5px solid #c7d2fe;
+        border-left: 7px solid #6366f1;
+        border-radius: 18px;
+        padding: 1.4rem 1.55rem;
         margin-bottom: 1.1rem;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
-        animation: quickFadeSlide 0.18s ease-out;
-        will-change: transform, opacity;
+        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.09);
+        animation: popSlideIn 0.2s ease-out;
     }
     .question-text {
-        font-size: 1.12rem;
-        font-weight: 600;
-        line-height: 1.6;
-        color: #0f172a;
+        font-size: 1.14rem;
+        font-weight: 700;
+        line-height: 1.62;
+        color: #1e1b4b;
         margin: 0;
     }
 
@@ -126,40 +247,96 @@ st.markdown("""
     div.stButton > button {
         text-align: left !important;
         justify-content: flex-start !important;
-        border-radius: 10px !important;
-        padding: 0.65rem 1rem !important;
-        font-weight: 500 !important;
+        border-radius: 12px !important;
+        padding: 0.7rem 1.05rem !important;
+        font-weight: 600 !important;
+        border: 1.5px solid #cbd5e1 !important;
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+        transition: all 0.14s ease !important;
+    }
+    div.stButton > button:hover {
+        border-color: #6366f1 !important;
+        background-color: #eef2ff !important;
+        transform: translateY(-1px);
+    }
+    div.stButton > button[kind="primary"] {
+        background: linear-gradient(90deg, #4f46e5 0%, #0ea5e9 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        box-shadow: 0 6px 14px rgba(79, 70, 229, 0.25) !important;
+    }
+    div.stButton > button[kind="primary"]:hover {
+        filter: brightness(1.05);
     }
 
-    /* Feature cards on welcome screen */
-    .feature-box {
-        background-color: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 1rem;
+    /* Explanation box */
+    .exp-box {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        border: 1.5px solid #fcd34d;
+        border-left: 6px solid #f59e0b;
+        border-radius: 14px;
+        padding: 1rem 1.15rem;
+        margin-top: 0.85rem;
+        color: #78350f;
+    }
+
+    /* Colorful welcome cards */
+    .feature-card-1 {
+        background: linear-gradient(160deg, #ffffff 0%, #eef2ff 100%);
+        border: 1.5px solid #c7d2fe;
+        border-top: 5px solid #4f46e5;
+        border-radius: 16px;
+        padding: 1.1rem;
         height: 100%;
+        box-shadow: 0 6px 16px rgba(79, 70, 229, 0.08);
     }
-    .feature-box h4 {
-        margin: 0 0 0.4rem 0;
-        font-size: 0.98rem;
+    .feature-card-2 {
+        background: linear-gradient(160deg, #ffffff 0%, #ecfdf5 100%);
+        border: 1.5px solid #a7f3d0;
+        border-top: 5px solid #10b981;
+        border-radius: 16px;
+        padding: 1.1rem;
+        height: 100%;
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.08);
+    }
+    .feature-card-3 {
+        background: linear-gradient(160deg, #ffffff 0%, #fff1f2 100%);
+        border: 1.5px solid #fecdd3;
+        border-top: 5px solid #f43f5e;
+        border-radius: 16px;
+        padding: 1.1rem;
+        height: 100%;
+        box-shadow: 0 6px 16px rgba(244, 63, 94, 0.08);
+    }
+    .feature-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        font-size: 1rem;
         color: #0f172a;
+        margin-bottom: 0.45rem;
     }
-    .feature-box p {
+    .feature-desc {
         margin: 0;
-        font-size: 0.88rem;
-        color: #475569;
-        line-height: 1.45;
+        font-size: 0.9rem;
+        color: #334155;
+        line-height: 1.5;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- CONFIGURATION ---
+# --- GEMINI CONFIGURATION ---
 def initialize_gemini():
     """Initialize Gemini API with error handling"""
     try:
         api_key = st.secrets.get("GEMINI_KEY") or st.secrets.get("GEN_API_KEY")
         if not api_key:
-            st.error("⚠️ API key not found in secrets.toml. Please add GEMINI_KEY to your secrets.")
+            st.error("API key not found in secrets.toml. Please add GEMINI_KEY to your secrets.")
             return None
 
         genai.configure(api_key=api_key)
@@ -273,29 +450,40 @@ def run_generate_quiz(topic_val, lang_val, count_val, level_val):
     st.session_state.cfg_num_q = count_val
     st.session_state.cfg_level = level_val
 
-    with st.spinner("Generating questions... This may take a moment."):
+    with st.spinner("Generating questions..."):
         questions = get_psc_questions(topic_val, lang_val, count_val, level_val)
         if questions:
             st.session_state.questions = questions
             st.session_state.current_idx = 0
             st.session_state.user_answers = {}
             st.session_state.quiz_submitted = False
-            st.success(f"✅ Generated {len(questions)} questions!")
+            st.success(f"Generated {len(questions)} questions.")
             st.rerun()
 
 # --- HERO HEADER ---
-st.markdown("""
+st.markdown(f"""
 <div class="quiz-hero">
-    <h1>📚 Kerala PSC AI Quiz Master</h1>
-    <p>Interactive practice deck tailored to Kerala PSC exam patterns</p>
+    <div class="quiz-hero-row">
+        {SVG_ICONS["brand"]}
+        <div>
+            <h1>Kerala PSC AI Quiz Master</h1>
+            <p>Vibrant practice studio crafted for Kerala PSC exam preparation</p>
+        </div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("### ⚙️ Quiz Setup")
+    icon_heading("gear", "Quiz Setup", "#4338CA")
 
-    sb_lang = st.radio("Language", ["English", "Malayalam"], index=["English", "Malayalam"].index(st.session_state.cfg_lang), horizontal=True, key="sb_lang")
+    sb_lang = st.radio(
+        "Language",
+        ["English", "Malayalam"],
+        index=["English", "Malayalam"].index(st.session_state.cfg_lang),
+        horizontal=True,
+        key="sb_lang"
+    )
     sb_level = st.selectbox(
         "Exam Level",
         ["10th/SSLC", "Plus Two", "Degree", "Post Graduate"],
@@ -307,12 +495,12 @@ with st.sidebar:
 
     st.divider()
 
-    if st.button("🎯 Generate New Quiz", type="primary", use_container_width=True, key="sb_gen_btn"):
+    if st.button("Generate New Quiz", type="primary", use_container_width=True, key="sb_gen_btn"):
         run_generate_quiz(sb_topic, sb_lang, sb_num_q, sb_level)
 
     if st.session_state.questions:
         st.divider()
-        st.markdown("### 📊 Session Tracker")
+        icon_heading("chart", "Session Tracker", "#0F766E")
 
         total_q = len(st.session_state.questions)
         answered = len(st.session_state.user_answers)
@@ -325,14 +513,14 @@ with st.sidebar:
             correct, percentage = calculate_score()
             st.metric("Current Score", f"{correct}/{answered}", f"{percentage:.1f}%")
 
-        if st.button("🔄 Reset Quiz", use_container_width=True, key="sb_reset_btn"):
+        if st.button("Reset Quiz", use_container_width=True, key="sb_reset_btn"):
             st.session_state.user_answers = {}
             st.session_state.current_idx = 0
             st.session_state.quiz_submitted = False
             st.rerun()
 
         st.divider()
-        st.markdown("### 🔢 Question Palette")
+        icon_heading("grid", "Question Palette", "#BE123C")
 
         cols_per_row = 5
         for row_start in range(0, total_q, cols_per_row):
@@ -350,14 +538,14 @@ with st.sidebar:
                             button_label = f"{q_num + 1}"
 
                         if q_num == st.session_state.current_idx:
-                            button_label = f"•{q_num + 1}"
+                            button_label = f"◆{q_num + 1}"
 
                         if st.button(button_label, key=f"nav_{q_num}", use_container_width=True):
                             st.session_state.current_idx = q_num
                             st.rerun()
 
 # --- DIRECT IN-PAGE SETUP PANEL ---
-with st.expander("⚙️ Quiz Setup (Mobile / Quick Access)", expanded=(st.session_state.questions is None)):
+with st.expander("Quiz Setup Panel", expanded=(st.session_state.questions is None)):
     m_col1, m_col2 = st.columns(2)
     with m_col1:
         m_lang = st.radio(
@@ -377,7 +565,7 @@ with st.expander("⚙️ Quiz Setup (Mobile / Quick Access)", expanded=(st.sessi
         m_num_q = st.slider("Number of Questions", 5, 200, st.session_state.cfg_num_q, key="m_num_q")
         m_topic = st.text_input("Topic", value=st.session_state.cfg_topic, placeholder="e.g., Indian Constitution", key="m_topic")
 
-    if st.button("🎯 Generate New Quiz", type="primary", use_container_width=True, key="m_gen_btn"):
+    if st.button("Generate New Quiz", type="primary", use_container_width=True, key="m_gen_btn"):
         run_generate_quiz(m_topic, m_lang, m_num_q, m_level)
 
 # --- MAIN QUIZ INTERFACE ---
@@ -392,20 +580,20 @@ if st.session_state.questions:
 
     if already_answered:
         if selected == q['answer']:
-            status_badge = '<span class="pill pill-green">✓ Correct</span>'
+            status_badge = f'<span class="pill pill-green">{SVG_ICONS["check"]} Correct</span>'
         else:
-            status_badge = '<span class="pill pill-red">✗ Incorrect</span>'
+            status_badge = f'<span class="pill pill-red">{SVG_ICONS["cross"]} Incorrect</span>'
     else:
-        status_badge = '<span class="pill">Unanswered</span>'
+        status_badge = '<span class="pill pill-amber">Unanswered</span>'
 
     st.markdown(f"""
     <div class="status-strip">
-        <div>
-            <span class="pill">Question {idx + 1} of {len(questions)}</span>
-            <span class="pill">{st.session_state.cfg_level}</span>
-            <span class="pill">{st.session_state.cfg_topic}</span>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            <span class="pill">Q {idx + 1} / {len(questions)}</span>
+            <span class="pill pill-teal">{st.session_state.cfg_level}</span>
+            <span class="pill pill-amber">{st.session_state.cfg_topic}</span>
         </div>
-        <div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
             <span class="pill">Attempted: {answered_count}/{len(questions)}</span>
             {status_badge}
         </div>
@@ -418,16 +606,19 @@ if st.session_state.questions:
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("#### Choose an Option")
+    st.markdown("**Select an Option**")
     for i, option in enumerate(q['options']):
         label_prefix = f"{chr(65 + i)})"
         if already_answered:
             if option == q['answer']:
-                st.success(f"**{label_prefix} {option}**  —  Correct Answer ✓")
+                st.success(f"**{label_prefix} {option}** — Correct Answer")
             elif option == selected:
-                st.error(f"**{label_prefix} {option}**  —  Your Selection ✗")
+                st.error(f"**{label_prefix} {option}** — Your Selection")
             else:
-                st.markdown(f"<div style='padding: 0.45rem 0.75rem; color: #64748b;'>{label_prefix} {option}</div>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<div style='padding: 0.55rem 0.85rem; color: #64748b; background:#ffffff; border-radius:10px; margin-bottom:0.35rem;'>{label_prefix} {option}</div>",
+                    unsafe_allow_html=True
+                )
         else:
             button_type = "primary" if selected == option else "secondary"
             if st.button(
@@ -440,26 +631,34 @@ if st.session_state.questions:
                 st.rerun()
 
     if already_answered:
-        st.info(f"**💡 Explanation:** {q.get('explanation', 'No explanation available.')}")
+        st.markdown(f"""
+        <div class="exp-box">
+            <div style="margin-top:2px;">{SVG_ICONS["bulb"]}</div>
+            <div><strong>Explanation:</strong> {q.get('explanation', 'No explanation available.')}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.divider()
     nav1, nav2, nav3 = st.columns([1.2, 1, 1.2])
 
     with nav1:
-        if st.button("⬅️ Previous", disabled=idx == 0, use_container_width=True, key=f"prev_{idx}"):
+        if st.button("Previous", disabled=idx == 0, use_container_width=True, key=f"prev_{idx}"):
             st.session_state.current_idx -= 1
             st.rerun()
 
     with nav2:
-        st.markdown(f"<div style='text-align:center; padding-top:0.45rem; font-weight:600;'>{idx + 1} / {len(questions)}</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='text-align:center; padding-top:0.5rem; font-weight:700; color:#4338ca;'>{idx + 1} / {len(questions)}</div>",
+            unsafe_allow_html=True
+        )
 
     with nav3:
         if idx < len(questions) - 1:
-            if st.button("Next ➡️", use_container_width=True, key=f"next_{idx}"):
+            if st.button("Next", use_container_width=True, key=f"next_{idx}"):
                 st.session_state.current_idx += 1
                 st.rerun()
         else:
-            if st.button("📝 Finish Quiz", type="primary", use_container_width=True, key=f"finish_{idx}"):
+            if st.button("Finish Quiz", type="primary", use_container_width=True, key=f"finish_{idx}"):
                 st.session_state.quiz_submitted = True
                 st.rerun()
 
@@ -470,7 +669,7 @@ if st.session_state.questions:
         correct, percentage = calculate_score()
         total = len(questions)
 
-        st.success("### 🎉 Quiz Completed!")
+        st.success("Quiz Completed!")
 
         m1, m2, m3 = st.columns(3)
         with m1:
@@ -479,35 +678,32 @@ if st.session_state.questions:
             st.metric("Accuracy", f"{percentage:.1f}%")
         with m3:
             if percentage >= 80:
-                st.metric("Performance", "Excellent 🌟")
+                st.metric("Performance", "Excellent")
             elif percentage >= 60:
-                st.metric("Performance", "Good 👍")
+                st.metric("Performance", "Good")
             else:
-                st.metric("Performance", "Keep Going 💪")
+                st.metric("Performance", "Keep Going")
 
 else:
     c1, c2, c3 = st.columns(3)
     with c1:
-        st.markdown("""
-        <div class="feature-box">
-            <h4>⚡ Instant Feedback</h4>
-            <p>ഓരോ ചോദ്യത്തിനും ഉത്തരം നൽകുമ്പോൾ തന്നെ ശരി/തെറ്റ് തിരിച്ചറിയാം.</p>
+        st.markdown(f"""
+        <div class="feature-card-1">
+            <div class="feature-title">{SVG_ICONS["bolt"]}<span>Instant Feedback</span></div>
+            <p class="feature-desc">ഓരോ ചോദ്യത്തിനും ഉത്തരം നൽകുമ്പോൾ തന്നെ ശരി/തെറ്റ് തിരിച്ചറിയാം.</p>
         </div>
         """, unsafe_allow_html=True)
     with c2:
-        st.markdown("""
-        <div class="feature-box">
-            <h4>💡 Quick Explanations</h4>
-            <p>തെറ്റിയാലും ശരിയായാലും കൃത്യമായ വിശദീകരണം ഉടൻ ലഭിക്കും.</p>
+        st.markdown(f"""
+        <div class="feature-card-2">
+            <div class="feature-title">{SVG_ICONS["spark"]}<span>Quick Explanations</span></div>
+            <p class="feature-desc">തെറ്റിയാലും ശരിയായാലും കൃത്യമായ വിശദീകരണം ഉടൻ ലഭിക്കും.</p>
         </div>
         """, unsafe_allow_html=True)
     with c3:
-        st.markdown("""
-        <div class="feature-box">
-            <h4>🧭 Easy Navigation</h4>
-            <p>Question Palette വഴിയോ Next/Previous ബട്ടൺ വഴിയോ വേഗം മാറാം.</p>
+        st.markdown(f"""
+        <div class="feature-card-3">
+            <div class="feature-title">{SVG_ICONS["compass"]}<span>Easy Navigation</span></div>
+            <p class="feature-desc">Question Palette വഴിയോ Next/Previous ബട്ടൺ വഴിയോ വേഗം മാറാം.</p>
         </div>
         """, unsafe_allow_html=True)
-
-    st.markdown("")
-    st.warning("⚠️ **Note:** Make sure to add your Gemini API key to `.streamlit/secrets.toml` before generating quizzes!")
