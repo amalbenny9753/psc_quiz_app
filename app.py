@@ -1,6 +1,7 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import google.generativeai as genai
+import html
 import json
 import math
 import random
@@ -723,6 +724,50 @@ def calculate_summary() -> dict:
         "wrong_items": wrong_items
     }
 
+def topic_key(topic: str) -> str:
+    """Normalise topic text so 'Kerala  History' and 'kerala history' count as the same topic"""
+    return " ".join(str(topic).split()).casefold()
+
+def get_topic_stats() -> list:
+    """Topic-wise summary built from the attempt log (most recently written topic first)"""
+    stats = {}
+    for item in st.session_state.attempt_logs:  # logs are stored newest first
+        key = topic_key(item["topic"])
+        if key not in stats:
+            stats[key] = {
+                "topic": " ".join(str(item["topic"]).split()),
+                "count": 0,
+                "sum_pct": 0.0,
+                "best_pct": 0.0,
+                "best_right": 0,
+                "best_total": item["total"],
+                "last_time": item["time"],
+                "last_right": item["right"],
+                "last_total": item["total"],
+                "last_pct": item["percent"],
+            }
+        d = stats[key]
+        d["count"] += 1
+        d["sum_pct"] += item["percent"]
+        if item["percent"] >= d["best_pct"]:
+            d["best_pct"] = item["percent"]
+            d["best_right"] = item["right"]
+            d["best_total"] = item["total"]
+    result = list(stats.values())
+    for d in result:
+        d["avg_pct"] = d["sum_pct"] / d["count"]
+    return result
+
+def attempts_for_topic(topic: str) -> int:
+    key = topic_key(topic)
+    return sum(1 for x in st.session_state.attempt_logs if topic_key(x["topic"]) == key)
+
+def go_to(page_name: str):
+    """Navigate from the sidebar and collapse it so the new page is visible on mobile"""
+    st.session_state.page = page_name
+    st.session_state.close_sidebar = True
+    st.rerun()
+
 def reset_to_home():
     """Clear active quiz state and return to Home; new questions load only after selecting & starting"""
     st.session_state.questions = None
@@ -741,6 +786,8 @@ def start_quiz(topic_val: str, lang_val: str, count_val: int, level_val: str):
     with st.spinner("Generating questions..."):
         questions = get_psc_questions(topic_val, lang_val, count_val, level_val)
         if questions:
+            # Attempt number continues from how many times this topic was already written
+            st.session_state.attempt_count = attempts_for_topic(topic_val) + 1
             st.session_state.questions = questions
             st.session_state.current_idx = 0
             st.session_state.user_answers = {}
@@ -829,16 +876,14 @@ with st.sidebar:
 
     if st.button("Home", use_container_width=True, key="sb_nav_home"):
         reset_to_home()
-        st.rerun()
+        go_to("home")
 
     if st.button(f"Attempt Log ({len(st.session_state.attempt_logs)})", use_container_width=True, key="sb_nav_logs"):
-        st.session_state.page = "logs"
-        st.rerun()
+        go_to("logs")
 
     if st.session_state.questions and st.session_state.page != "score":
         if st.button("Active Quiz", use_container_width=True, key="sb_nav_quiz"):
-            st.session_state.page = "quiz"
-            st.rerun()
+            go_to("quiz")
 
     st.divider()
     st.markdown("### Exam Options")
@@ -882,10 +927,11 @@ with st.sidebar:
                             lbl = f"•{q_num + 1}"
                         if st.button(lbl, key=f"sb_q_{q_num}", use_container_width=True):
                             st.session_state.current_idx = q_num
-                            st.session_state.page = "quiz"
-                            st.rerun()
+                            go_to("quiz")
 
 # --- TOP HEADER ---
+_in_exam = st.session_state.page in ("quiz", "score") and bool(st.session_state.questions)
+_attempt_tag = f'<span class="tag">Attempt #{st.session_state.attempt_count}</span>' if _in_exam else ""
 render_html(f"""
 <div class="top-app-bar">
 <div class="top-app-left">
@@ -895,7 +941,7 @@ render_html(f"""
 <h2 class="top-app-title">Kerala PSC Quiz Studio</h2>
 </div>
 </div>
-<span class="tag">Attempt #{st.session_state.attempt_count}</span>
+{_attempt_tag}
 </div>
 """)
 
@@ -932,12 +978,36 @@ if st.session_state.page == "logs":
         with m3:
             st.metric("Latest Score", f"{logs[0]['right']}/{logs[0]['total']}")
 
-        st.markdown("")
+        # ---- Topic-wise summary ----
+        st.markdown("### Topic-wise Summary")
+        for d in get_topic_stats():
+            t_name = html.escape(d["topic"])
+            render_html(f"""
+            <div class="log-card" style="border-left:5px solid #38bdf8;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+            <strong style="font-size:1.02rem; color:#ffffff;">{t_name}</strong>
+            <span class="tag">{d['count']} തവണ എഴുതി</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:0.6rem;">
+            <span class="tag tag-green">Best: {d['best_right']}/{d['best_total']} ({d['best_pct']:.1f}%)</span>
+            <span class="tag">Average: {d['avg_pct']:.1f}%</span>
+            <span class="tag">Last: {d['last_right']}/{d['last_total']} ({d['last_pct']:.1f}%)</span>
+            </div>
+            <div style="height:7px; background:#0b1222; border-radius:99px; margin-top:0.7rem; overflow:hidden;">
+            <div style="height:100%; width:{min(d['avg_pct'], 100):.0f}%; background:linear-gradient(90deg,#2563eb,#10b981);"></div>
+            </div>
+            <p style="margin:0.5rem 0 0 0; font-size:0.8rem; color:#94a3b8;">Last written: {d['last_time']}</p>
+            </div>
+            """)
+
+        # ---- Full history ----
+        st.markdown("### All Attempts")
         for item in logs:
+            i_topic = html.escape(str(item['topic']))
             render_html(f"""
             <div class="log-card">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
-            <strong style="font-size:1rem; color:#ffffff;">{item['topic']}</strong>
+            <strong style="font-size:1rem; color:#ffffff;">{i_topic}</strong>
             <span class="tag">Attempt #{item['attempt']}</span>
             </div>
             <p style="margin:0.35rem 0 0.55rem 0; font-size:0.84rem; color:#cbd5e1;">
@@ -1020,7 +1090,7 @@ elif st.session_state.page == "score" and st.session_state.questions:
             reset_to_home()
             st.rerun()
     with b2:
-        if st.button("Start Next Attempt", use_container_width=True, key="score_next_attempt"):
+        if st.button("Attempt Again", use_container_width=True, key="score_next_attempt"):
             st.session_state.attempt_count += 1
             st.session_state.user_answers = {}
             st.session_state.current_idx = 0
@@ -1108,7 +1178,13 @@ elif st.session_state.page == "quiz" and st.session_state.questions:
 else:
     logs = st.session_state.attempt_logs
     avg_score = f"{(sum(x['percent'] for x in logs)/len(logs)):.1f}%" if logs else "0.0%"
-    weak_area = logs[0]["topic"] if (logs and logs[0]["wrong"] > 0) else "None"
+    topic_stats = get_topic_stats()
+    # Focus topic = topic with the lowest average score (only if it is below 100%)
+    weak_area = "None"
+    if topic_stats:
+        _weakest = min(topic_stats, key=lambda d: d["avg_pct"])
+        if _weakest["avg_pct"] < 100:
+            weak_area = html.escape(_weakest["topic"])
 
     render_html(f"""
     <div class="prep-panel">
@@ -1116,8 +1192,8 @@ else:
     <div class="mini-stat-grid">
     <div class="mini-stat-card">
     <div class="mini-stat-icon">{SVG_ICONS["trophy"]}</div>
-    <div class="mini-stat-val">#{st.session_state.attempt_count}</div>
-    <div class="mini-stat-lbl">Current Attempt</div>
+    <div class="mini-stat-val">{len(logs)}</div>
+    <div class="mini-stat-lbl">Exams Written</div>
     </div>
     <div class="mini-stat-card">
     <div class="mini-stat-icon">{SVG_ICONS["target_score"]}</div>
@@ -1129,20 +1205,6 @@ else:
     <div class="mini-stat-val" style="font-size:0.95rem;">{weak_area}</div>
     <div class="mini-stat-lbl">Focus Topic</div>
     </div>
-    </div>
-    </div>
-    <div class="cat-grid">
-    <div class="cat-tile-blue">
-    <div class="cat-icon">{SVG_ICONS["history_icon"]}</div>
-    <div class="cat-name">Kerala History</div>
-    </div>
-    <div class="cat-tile-green">
-    <div class="cat-icon">{SVG_ICONS["const_icon"]}</div>
-    <div class="cat-name">Constitution</div>
-    </div>
-    <div class="cat-tile-amber">
-    <div class="cat-icon">{SVG_ICONS["ca_icon"]}</div>
-    <div class="cat-name">Current Affairs</div>
     </div>
     </div>
     """)
