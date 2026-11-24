@@ -114,26 +114,59 @@ SVG_ICONS = {
 # --- DARK COLORFUL THEME + HIGH-CONTRAST OPTION FEEDBACK ---
 render_html("""
 <style>
+/* ---- Hide only the unwanted items (GitHub, Edit, Deploy, menu, footer) ---- */
 footer {visibility: hidden;}
-[data-testid="stToolbar"] {display: none !important;}
+#MainMenu {visibility: hidden;}
+[data-testid="stMainMenu"] {display: none !important;}
+[data-testid="stToolbarActions"] {display: none !important;}
+[data-testid="stAppDeployButton"] {display: none !important;}
 [data-testid="stDecoration"] {display: none !important;}
 [data-testid="stStatusWidget"] {display: none !important;}
 .stDeployButton {display: none !important;}
-#MainMenu {visibility: hidden;}
+.viewerBadge_container__r5tak, [class*="viewerBadge"] {display: none !important;}
 
+/* ---- Keep header + toolbar alive so the sidebar toggle stays visible ---- */
 header[data-testid="stHeader"] {
 background-color: transparent !important;
 visibility: visible !important;
+display: flex !important;
 }
+[data-testid="stToolbar"] {
+visibility: visible !important;
+display: flex !important;
+background: transparent !important;
+}
+
+/* ---- Sidebar open/close buttons: always visible, high contrast ---- */
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="stExpandSidebarButton"],
+[data-testid="stSidebarCollapseButton"],
+[data-testid="collapsedControl"] {
+visibility: visible !important;
+display: flex !important;
+opacity: 1 !important;
+z-index: 999999 !important;
+}
+[data-testid="stExpandSidebarButton"],
+[data-testid="stSidebarCollapsedControl"] button {
+background: #1d2b4a !important;
+border: 1px solid #3b5a9a !important;
+border-radius: 12px !important;
+}
+[data-testid="stExpandSidebarButton"] svg,
+[data-testid="stSidebarCollapsedControl"] svg,
+[data-testid="stSidebarCollapseButton"] svg,
+[data-testid="collapsedControl"] svg,
+[data-testid="stExpandSidebarButton"] span,
+[data-testid="stSidebarCollapseButton"] span {
+color: #ffffff !important;
+fill: #ffffff !important;
+}
+
 [data-testid="stSidebar"] {
 background-color: #0e1525 !important;
 border-right: 1px solid #24324d !important;
 visibility: visible !important;
-}
-[data-testid="stSidebarCollapsedControl"] {
-visibility: visible !important;
-display: flex !important;
-z-index: 999999 !important;
 }
 
 .stApp {
@@ -143,7 +176,7 @@ color: #f8fafc;
 
 .block-container {
 max-width: 960px;
-padding-top: 1.15rem;
+padding-top: 3.2rem;
 padding-bottom: 3rem;
 }
 
@@ -161,6 +194,20 @@ opacity: 1 !important;
 [data-testid="stThumbValue"] {
 color: #f8fafc !important;
 opacity: 1 !important;
+}
+
+/* Expander (in-page Exam Options) */
+[data-testid="stExpander"] {
+background: #121c33 !important;
+border: 1px solid #28395e !important;
+border-radius: 16px !important;
+}
+[data-testid="stExpander"] summary p,
+[data-testid="stExpander"] summary span,
+[data-testid="stExpander"] summary svg {
+color: #f8fafc !important;
+fill: #f8fafc !important;
+font-weight: 700 !important;
 }
 
 /* Fix Streamlit alert text contrast so answered options are clearly readable */
@@ -606,6 +653,9 @@ if "cfg_num_q" not in st.session_state:
 if "cfg_topic" not in st.session_state:
     st.session_state.cfg_topic = "Kerala History"
 
+LANG_OPTIONS = ["English", "Malayalam"]
+LEVEL_OPTIONS = ["10th/SSLC", "Plus Two", "Degree", "Post Graduate"]
+
 def calculate_summary() -> dict:
     questions = st.session_state.questions or []
     total = len(questions)
@@ -714,15 +764,15 @@ with st.sidebar:
 
     sb_lang = st.radio(
         "Language",
-        ["English", "Malayalam"],
-        index=["English", "Malayalam"].index(st.session_state.cfg_lang),
+        LANG_OPTIONS,
+        index=LANG_OPTIONS.index(st.session_state.cfg_lang),
         horizontal=True,
         key="sb_lang"
     )
     sb_level = st.selectbox(
         "Exam Level",
-        ["10th/SSLC", "Plus Two", "Degree", "Post Graduate"],
-        index=["10th/SSLC", "Plus Two", "Degree", "Post Graduate"].index(st.session_state.cfg_level),
+        LEVEL_OPTIONS,
+        index=LEVEL_OPTIONS.index(st.session_state.cfg_level),
         key="sb_level"
     )
     sb_num_q = st.slider("Number of Questions", 5, 200, st.session_state.cfg_num_q, key="sb_num_q")
@@ -1002,4 +1052,27 @@ else:
     </div>
     """)
 
-    st.info("സൈഡ്‌ബാർ തുറന്ന് Language, Exam Level, Number of Questions, Topic എന്നിവ സെറ്റ് ചെയ്ത് **Start Exam** ക്ലിക്ക് ചെയ്യുക.")
+    # --- IN-PAGE EXAM OPTIONS (works even if the sidebar is closed) ---
+    with st.expander("Exam Options — ഇവിടെ നിന്നും തുടങ്ങാം", expanded=True):
+        hm_lang = st.radio(
+            "Language",
+            LANG_OPTIONS,
+            index=LANG_OPTIONS.index(st.session_state.cfg_lang),
+            horizontal=True,
+            key="hm_lang"
+        )
+        hm_level = st.selectbox(
+            "Exam Level",
+            LEVEL_OPTIONS,
+            index=LEVEL_OPTIONS.index(st.session_state.cfg_level),
+            key="hm_level"
+        )
+        hm_num_q = st.slider("Number of Questions", 5, 200, st.session_state.cfg_num_q, key="hm_num_q")
+        hm_topic = st.text_input("Topic", value=st.session_state.cfg_topic, placeholder="e.g., Indian Constitution", key="hm_topic")
+
+        if st.button("Start Exam", type="primary", use_container_width=True, key="hm_start_btn"):
+            start_quiz(hm_topic, hm_lang, hm_num_q, hm_level)
+
+    if st.button(f"Attempt Log ({len(st.session_state.attempt_logs)})", use_container_width=True, key="hm_nav_logs"):
+        st.session_state.page = "logs"
+        st.rerun()
