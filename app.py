@@ -1052,27 +1052,4 @@ else:
     </div>
     """)
 
-    # --- IN-PAGE EXAM OPTIONS (works even if the sidebar is closed) ---
-    with st.expander("Exam Options — ഇവിടെ നിന്നും തുടങ്ങാം", expanded=True):
-        hm_lang = st.radio(
-            "Language",
-            LANG_OPTIONS,
-            index=LANG_OPTIONS.index(st.session_state.cfg_lang),
-            horizontal=True,
-            key="hm_lang"
-        )
-        hm_level = st.selectbox(
-            "Exam Level",
-            LEVEL_OPTIONS,
-            index=LEVEL_OPTIONS.index(st.session_state.cfg_level),
-            key="hm_level"
-        )
-        hm_num_q = st.slider("Number of Questions", 5, 200, st.session_state.cfg_num_q, key="hm_num_q")
-        hm_topic = st.text_input("Topic", value=st.session_state.cfg_topic, placeholder="e.g., Indian Constitution", key="hm_topic")
-
-        if st.button("Start Exam", type="primary", use_container_width=True, key="hm_start_btn"):
-            start_quiz(hm_topic, hm_lang, hm_num_q, hm_level)
-
-    if st.button(f"Attempt Log ({len(st.session_state.attempt_logs)})", use_container_width=True, key="hm_nav_logs"):
-        st.session_state.page = "logs"
-        st.rerun()
+    st.info("മുകളിൽ ഇടതുവശത്തെ › ബട്ടൺ അമർത്തി സൈഡ്‌ബാർ തുറന്ന് Language, Exam Level, Number of Questions, Topic എന്നിവ സെറ്റ് ചെയ്ത് **Start Exam** ക്ലിക്ക് ചെയ്യുക.")
