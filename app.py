@@ -827,6 +827,68 @@ def close_sidebar_js():
         height=0,
     )
 
+def enable_swipe_navigation():
+    """Swipe left = Next question, swipe right = Previous question (touch screens).
+    The listener is injected once into the main page and simply clicks the existing Next/Previous buttons."""
+    components.html(
+        """
+        <script>
+        (function () {
+            var w = window.parent;
+            var d = w.document;
+            if (w.__pscSwipeInstalled) { return; }
+            w.__pscSwipeInstalled = true;
+
+            var code = `
+            (function () {
+                var sx = 0, sy = 0, st = 0, tracking = false;
+
+                function findBtn(label) {
+                    var btns = document.querySelectorAll('div.stButton button');
+                    for (var i = 0; i < btns.length; i++) {
+                        var b = btns[i];
+                        if (b.closest('[data-testid="stSidebar"]')) continue;
+                        if (b.innerText.trim() === label && !b.disabled) return b;
+                    }
+                    return null;
+                }
+
+                document.addEventListener('touchstart', function (e) {
+                    if (e.touches.length !== 1) { tracking = false; return; }
+                    var t = e.target;
+                    // ignore swipes that start in the sidebar or on inputs/sliders
+                    if (t.closest('[data-testid="stSidebar"], input, textarea, [role="slider"], [data-baseweb="select"]')) {
+                        tracking = false; return;
+                    }
+                    sx = e.touches[0].clientX;
+                    sy = e.touches[0].clientY;
+                    st = Date.now();
+                    tracking = true;
+                }, { passive: true });
+
+                document.addEventListener('touchend', function (e) {
+                    if (!tracking) return;
+                    tracking = false;
+                    var t = e.changedTouches[0];
+                    var dx = t.clientX - sx;
+                    var dy = t.clientY - sy;
+                    var dt = Date.now() - st;
+                    // clear, mostly-horizontal, reasonably quick swipe
+                    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.6 || dt > 700) return;
+                    var btn = dx < 0 ? findBtn('Next') : findBtn('Previous');
+                    if (btn) btn.click();
+                }, { passive: true });
+            })();
+            `;
+            var s = d.createElement('script');
+            s.textContent = code;
+            d.head.appendChild(s);
+        })();
+        </script>
+        """,
+        height=0,
+    )
+
 def record_attempt_if_needed(summary: dict):
     if not st.session_state.current_attempt_logged:
         st.session_state.attempt_logs.insert(0, {
@@ -1152,6 +1214,8 @@ elif st.session_state.page == "quiz" and st.session_state.questions:
         <div><strong>Explanation:</strong> {q.get('explanation', 'No explanation available.')}</div>
         </div>
         """)
+
+    enable_swipe_navigation()
 
     st.divider()
     n1, n2, n3 = st.columns([1.2, 1, 1.2])
