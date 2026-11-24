@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import google.generativeai as genai
 import json
 from typing import List, Dict, Optional
@@ -19,6 +20,7 @@ st.markdown("""
     [data-testid="stToolbar"] {display: none !important;}
     [data-testid="stDecoration"] {display: none !important;}
     .stDeployButton {display: none !important;}
+    [data-testid="stStatusWidget"] {display: none !important;}
     #MainMenu {visibility: hidden;}
 
     /* Keep header visible with transparent background so sidebar toggle works */
@@ -145,6 +147,101 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# --- HIDE "MANAGE APP" / CLOUD BADGE & ENABLE TOUCH SWIPE NAVIGATION ---
+components.html("""
+<script>
+(function() {
+    function hideManageApp() {
+        try {
+            const targets = [document, window.parent ? window.parent.document : null].filter(Boolean);
+            targets.forEach(doc => {
+                const selectors = [
+                    '[data-testid="stToolbar"]',
+                    '[data-testid="stDecoration"]',
+                    '[data-testid="stStatusWidget"]',
+                    '.stDeployButton',
+                    'footer',
+                    '#MainMenu',
+                    'iframe[title="Manage app"]'
+                ];
+                selectors.forEach(sel => {
+                    doc.querySelectorAll(sel).forEach(el => {
+                        el.style.setProperty('display', 'none', 'important');
+                        el.style.setProperty('visibility', 'hidden', 'important');
+                    });
+                });
+
+                // Hide floating buttons/links containing "Manage app"
+                doc.querySelectorAll('button, a, div').forEach(el => {
+                    if (el.children.length <= 2 && el.innerText && el.innerText.includes('Manage app')) {
+                        el.style.setProperty('display', 'none', 'important');
+                        el.style.setProperty('visibility', 'hidden', 'important');
+                    }
+                });
+            });
+        } catch (e) {}
+    }
+
+    function clickNavButton(direction) {
+        try {
+            const doc = window.parent ? window.parent.document : document;
+            const buttons = Array.from(doc.querySelectorAll('button'));
+            const target = buttons.find(btn => {
+                if (btn.disabled) return false;
+                const txt = (btn.innerText || '').trim();
+                if (direction === 'next') {
+                    return txt.includes('Next');
+                } else {
+                    return txt.includes('Previous');
+                }
+            });
+            if (target) {
+                target.click();
+            }
+        } catch (e) {}
+    }
+
+    function bindSwipe() {
+        try {
+            const doc = window.parent ? window.parent.document : document;
+            if (doc.__pscSwipeBound) return;
+            doc.__pscSwipeBound = true;
+
+            let startX = 0;
+            let startY = 0;
+
+            doc.addEventListener('touchstart', function(e) {
+                if (!e.touches || e.touches.length === 0) return;
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            }, { passive: true });
+
+            doc.addEventListener('touchend', function(e) {
+                if (!e.changedTouches || e.changedTouches.length === 0) return;
+                const endX = e.changedTouches[0].clientX;
+                const endY = e.changedTouches[0].clientY;
+                const dx = endX - startX;
+                const dy = endY - startY;
+
+                // Horizontal swipe threshold (ignore vertical scrolling)
+                if (Math.abs(dx) > 75 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                    if (dx < 0) {
+                        clickNavButton('next');
+                    } else {
+                        clickNavButton('prev');
+                    }
+                }
+            }, { passive: true });
+        } catch (e) {}
+    }
+
+    hideManageApp();
+    bindSwipe();
+    setInterval(hideManageApp, 1000);
+})();
+</script>
+""", height=0)
+
 # --- CONFIGURATION ---
 def initialize_gemini():
     """Initialize Gemini API with error handling"""
@@ -250,7 +347,6 @@ if "user_answers" not in st.session_state:
 if "quiz_submitted" not in st.session_state:
     st.session_state.quiz_submitted = False
 
-# Default quiz settings in session state so both sidebar and main expander stay in sync
 if "cfg_lang" not in st.session_state:
     st.session_state.cfg_lang = "English"
 if "cfg_level" not in st.session_state:
@@ -349,7 +445,7 @@ with st.sidebar:
                             st.session_state.current_idx = q_num
                             st.rerun()
 
-# --- DIRECT IN-PAGE SETUP PANEL (WORKS EVEN IF SIDEBAR IS HIDDEN ON MOBILE) ---
+# --- DIRECT IN-PAGE SETUP PANEL ---
 with st.expander("⚙️ Quiz Setup (Mobile / Quick Access)", expanded=(st.session_state.questions is None)):
     m_col1, m_col2 = st.columns(2)
     with m_col1:
@@ -456,6 +552,8 @@ if st.session_state.questions:
                 st.session_state.quiz_submitted = True
                 st.rerun()
 
+    st.caption("💡 Tip: Swipe left for Next question, swipe right for Previous question.")
+
     if st.session_state.quiz_submitted and len(st.session_state.user_answers) == len(questions):
         st.divider()
         st.balloons()
@@ -497,8 +595,8 @@ else:
     with c3:
         st.markdown("""
         <div class="feature-box">
-            <h4>🧭 Easy Navigation</h4>
-            <p>Question Palette വഴി ഏത് ചോദ്യത്തിലേക്കും വേഗം പോകാം.</p>
+            <h4>👆 Swipe Navigation</h4>
+            <p>മൊബൈലിൽ ഇടത്തോട്ടും വലത്തോട്ടും swipe ചെയ്ത് ചോദ്യങ്ങൾ മാറ്റാം.</p>
         </div>
         """, unsafe_allow_html=True)
 
