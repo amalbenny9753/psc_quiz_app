@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import google.generativeai as genai
 import json
 from typing import List, Dict, Optional
@@ -12,18 +11,18 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CUSTOM LAYOUT STYLING ---
+# --- LIGHTWEIGHT LAYOUT STYLING (NO HEAVY JS / NO LAG) ---
 st.markdown("""
 <style>
-    /* Hide footer and deploy/manage toolbar */
+    /* Hide footer and deploy/manage toolbar where possible */
     footer {visibility: hidden;}
     [data-testid="stToolbar"] {display: none !important;}
     [data-testid="stDecoration"] {display: none !important;}
-    .stDeployButton {display: none !important;}
     [data-testid="stStatusWidget"] {display: none !important;}
+    .stDeployButton {display: none !important;}
     #MainMenu {visibility: hidden;}
 
-    /* Keep header visible with transparent background so sidebar toggle works */
+    /* Keep header visible so sidebar toggle button stays usable */
     header[data-testid="stHeader"] {
         background-color: transparent !important;
         visibility: visible !important;
@@ -48,7 +47,7 @@ st.markdown("""
         padding: 1.4rem 1.75rem;
         border-radius: 16px;
         margin-bottom: 1.25rem;
-        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.14);
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
     }
     .quiz-hero h1 {
         margin: 0;
@@ -93,15 +92,15 @@ st.markdown("""
         color: #991b1b;
     }
 
-    /* Question card + subtle entrance animation */
-    @keyframes cardSlideIn {
-        0% {
-            opacity: 0.55;
-            transform: translateX(14px) scale(0.99);
+    /* Smooth GPU-friendly question entrance animation */
+    @keyframes quickFadeSlide {
+        from {
+            opacity: 0.4;
+            transform: translate3d(10px, 0, 0);
         }
-        100% {
+        to {
             opacity: 1;
-            transform: translateX(0) scale(1);
+            transform: translate3d(0, 0, 0);
         }
     }
     .question-card {
@@ -111,9 +110,9 @@ st.markdown("""
         border-radius: 14px;
         padding: 1.35rem 1.5rem;
         margin-bottom: 1.1rem;
-        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
-        animation: cardSlideIn 0.24s ease-out;
-        transition: transform 0.16s ease, opacity 0.16s ease;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+        animation: quickFadeSlide 0.18s ease-out;
+        will-change: transform, opacity;
     }
     .question-text {
         font-size: 1.12rem;
@@ -130,11 +129,6 @@ st.markdown("""
         border-radius: 10px !important;
         padding: 0.65rem 1rem !important;
         font-weight: 500 !important;
-        transition: all 0.15s ease !important;
-    }
-    div.stButton > button:hover {
-        transform: translateY(-1px);
-        border-color: #2563eb !important;
     }
 
     /* Feature cards on welcome screen */
@@ -158,190 +152,6 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-
-# --- HIDE "MANAGE APP" & ENABLE ANIMATED TOUCH SWIPE NAVIGATION ---
-components.html("""
-<script>
-(function() {
-    function hideManageApp() {
-        try {
-            const targets = [document, window.parent ? window.parent.document : null].filter(Boolean);
-            targets.forEach(doc => {
-                const selectors = [
-                    '[data-testid="stToolbar"]',
-                    '[data-testid="stDecoration"]',
-                    '[data-testid="stStatusWidget"]',
-                    '.stDeployButton',
-                    'footer',
-                    '#MainMenu',
-                    'iframe[title="Manage app"]'
-                ];
-                selectors.forEach(sel => {
-                    doc.querySelectorAll(sel).forEach(el => {
-                        el.style.setProperty('display', 'none', 'important');
-                        el.style.setProperty('visibility', 'hidden', 'important');
-                    });
-                });
-
-                doc.querySelectorAll('button, a, div').forEach(el => {
-                    if (el.children.length <= 2 && el.innerText && el.innerText.includes('Manage app')) {
-                        el.style.setProperty('display', 'none', 'important');
-                        el.style.setProperty('visibility', 'hidden', 'important');
-                    }
-                });
-            });
-        } catch (e) {}
-    }
-
-    function ensureSwipeHud(doc) {
-        let hud = doc.getElementById('psc-swipe-hud');
-        if (!hud) {
-            hud = doc.createElement('div');
-            hud.id = 'psc-swipe-hud';
-            hud.style.cssText = `
-                position: fixed;
-                top: 50%;
-                transform: translateY(-50%) scale(0.9);
-                padding: 12px 20px;
-                border-radius: 999px;
-                background: rgba(15, 23, 42, 0.9);
-                color: #ffffff;
-                font-size: 14px;
-                font-weight: 600;
-                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-                opacity: 0;
-                pointer-events: none;
-                transition: opacity 0.16s ease, transform 0.16s ease;
-                z-index: 1000000;
-                backdrop-filter: blur(6px);
-            `;
-            doc.body.appendChild(hud);
-        }
-        return hud;
-    }
-
-    function showSwipeHud(doc, text, side) {
-        const hud = ensureSwipeHud(doc);
-        hud.innerText = text;
-        hud.style.left = side === 'left' ? '18px' : 'auto';
-        hud.style.right = side === 'right' ? '18px' : 'auto';
-        hud.style.opacity = '1';
-        hud.style.transform = 'translateY(-50%) scale(1)';
-
-        clearTimeout(hud.__hideTimer);
-        hud.__hideTimer = setTimeout(() => {
-            hud.style.opacity = '0';
-            hud.style.transform = 'translateY(-50%) scale(0.9)';
-        }, 550);
-    }
-
-    function setCardsDragOffset(doc, dx) {
-        const clamped = Math.max(-70, Math.min(70, dx * 0.35));
-        const opacity = Math.max(0.65, 1 - Math.abs(clamped) / 160);
-        doc.querySelectorAll('.question-card').forEach(card => {
-            card.style.transition = 'none';
-            card.style.transform = `translateX(${clamped}px) rotate(${clamped * 0.03}deg)`;
-            card.style.opacity = `${opacity}`;
-        });
-    }
-
-    function resetCardsOffset(doc, exitDir = null) {
-        doc.querySelectorAll('.question-card').forEach(card => {
-            card.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
-            if (exitDir === 'next') {
-                card.style.transform = 'translateX(-45px)';
-                card.style.opacity = '0.35';
-            } else if (exitDir === 'prev') {
-                card.style.transform = 'translateX(45px)';
-                card.style.opacity = '0.35';
-            } else {
-                card.style.transform = 'translateX(0px) rotate(0deg)';
-                card.style.opacity = '1';
-            }
-        });
-    }
-
-    function clickNavButton(direction) {
-        try {
-            const doc = window.parent ? window.parent.document : document;
-            const buttons = Array.from(doc.querySelectorAll('button'));
-            const target = buttons.find(btn => {
-                if (btn.disabled) return false;
-                const txt = (btn.innerText || '').trim();
-                if (direction === 'next') {
-                    return txt.includes('Next');
-                } else {
-                    return txt.includes('Previous');
-                }
-            });
-            if (target) {
-                showSwipeHud(
-                    doc,
-                    direction === 'next' ? '➡️ Next Question' : '⬅️ Previous Question',
-                    direction === 'next' ? 'right' : 'left'
-                );
-                resetCardsOffset(doc, direction);
-                setTimeout(() => target.click(), 90);
-            } else {
-                resetCardsOffset(doc, null);
-            }
-        } catch (e) {}
-    }
-
-    function bindSwipe() {
-        try {
-            const doc = window.parent ? window.parent.document : document;
-            if (doc.__pscSwipeBound) return;
-            doc.__pscSwipeBound = true;
-
-            let startX = 0;
-            let startY = 0;
-            let tracking = false;
-
-            doc.addEventListener('touchstart', function(e) {
-                if (!e.touches || e.touches.length === 0) return;
-                startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
-                tracking = true;
-            }, { passive: true });
-
-            doc.addEventListener('touchmove', function(e) {
-                if (!tracking || !e.touches || e.touches.length === 0) return;
-                const dx = e.touches[0].clientX - startX;
-                const dy = e.touches[0].clientY - startY;
-                if (Math.abs(dx) > Math.abs(dy) * 1.3 && Math.abs(dx) > 12) {
-                    setCardsDragOffset(doc, dx);
-                }
-            }, { passive: true });
-
-            doc.addEventListener('touchend', function(e) {
-                if (!tracking || !e.changedTouches || e.changedTouches.length === 0) return;
-                tracking = false;
-
-                const endX = e.changedTouches[0].clientX;
-                const endY = e.changedTouches[0].clientY;
-                const dx = endX - startX;
-                const dy = endY - startY;
-
-                if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.4) {
-                    if (dx < 0) {
-                        clickNavButton('next');
-                    } else {
-                        clickNavButton('prev');
-                    }
-                } else {
-                    resetCardsOffset(doc, null);
-                }
-            }, { passive: true });
-        } catch (e) {}
-    }
-
-    hideManageApp();
-    bindSwipe();
-    setInterval(hideManageApp, 1000);
-})();
-</script>
-""", height=0)
 
 # --- CONFIGURATION ---
 def initialize_gemini():
@@ -653,8 +463,6 @@ if st.session_state.questions:
                 st.session_state.quiz_submitted = True
                 st.rerun()
 
-    st.caption("💡 Tip: Swipe left for Next question, swipe right for Previous question.")
-
     if st.session_state.quiz_submitted and len(st.session_state.user_answers) == len(questions):
         st.divider()
         st.balloons()
@@ -696,8 +504,8 @@ else:
     with c3:
         st.markdown("""
         <div class="feature-box">
-            <h4>👆 Swipe Navigation</h4>
-            <p>മൊബൈലിൽ ഇടത്തോട്ടും വലത്തോട്ടും swipe ചെയ്ത് ചോദ്യങ്ങൾ മാറ്റാം.</p>
+            <h4>🧭 Easy Navigation</h4>
+            <p>Question Palette വഴിയോ Next/Previous ബട്ടൺ വഴിയോ വേഗം മാറാം.</p>
         </div>
         """, unsafe_allow_html=True)
 
