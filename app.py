@@ -2,6 +2,8 @@ import streamlit as st
 import streamlit.components.v1 as components
 import google.generativeai as genai
 import json
+import math
+import random
 import textwrap
 from datetime import datetime
 from typing import List, Dict, Optional
@@ -411,37 +413,65 @@ margin: 0;
 50% { transform: scale(1.15) rotate(6deg); opacity: 1; }
 100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
-@keyframes sparkBurst {
-0% { transform: translate(0, 0) scale(0.4); opacity: 1; }
-100% { transform: translate(var(--tx), var(--ty)) scale(1.15); opacity: 0; }
+@keyframes confettiFly {
+0% { transform: translate(0, 0) rotate(0deg) scale(0.3); opacity: 0; }
+12% { opacity: 1; }
+70% { opacity: 1; }
+100% { transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(1); opacity: 0; }
+}
+@keyframes crackerShake {
+0% { transform: scale(0.3) rotate(-30deg); }
+40% { transform: scale(1.5) rotate(18deg); }
+70% { transform: scale(1.1) rotate(-10deg); }
+100% { transform: scale(1) rotate(0deg); }
+}
+@keyframes boxGlow {
+0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.75); }
+100% { box-shadow: 0 0 0 26px rgba(52, 211, 153, 0); }
+}
+@keyframes textSlide {
+0% { transform: translateX(-14px); opacity: 0; }
+100% { transform: translateX(0); opacity: 1; }
 }
 .cracker-box {
 position: relative;
-overflow: hidden;
+overflow: visible;
 display: flex;
 align-items: center;
 gap: 10px;
 background: linear-gradient(120deg, #064e3b 0%, #065f46 60%, #0f766e 100%);
 border: 1px solid #34d399;
 border-radius: 14px;
-padding: 0.75rem 1rem;
+padding: 0.85rem 1rem;
 margin: 0.5rem 0 0.8rem 0;
 color: #ecfdf5 !important;
 font-weight: 700;
+animation: boxGlow 0.9s ease-out;
 }
 .cracker-ico {
 display: inline-flex;
-animation: crackerPop 0.45s ease-out;
+animation: crackerShake 0.7s ease-out;
 }
-.spark {
+.cracker-txt {
+animation: textSlide 0.5s ease-out 0.15s both;
+}
+.confetti {
 position: absolute;
-right: 26px;
 top: 50%;
 width: 8px;
-height: 8px;
-border-radius: 50%;
-animation: sparkBurst 0.65s ease-out forwards;
+height: 13px;
+border-radius: 2px;
+opacity: 0;
 pointer-events: none;
+z-index: 50;
+animation: confettiFly 1.2s cubic-bezier(0.15, 0.7, 0.3, 1) both;
+animation-delay: var(--d);
+}
+
+/* Hide stale (greyed-out) alert boxes while the app is re-rendering */
+div[data-stale="true"]:has([data-testid="stAlert"]),
+div[data-stale="true"]:has(.log-card) {
+display: none !important;
 }
 
 /* Explanation */
@@ -766,15 +796,30 @@ def record_attempt_if_needed(summary: dict):
         st.session_state.current_attempt_logged = True
 
 def show_cracker():
+    """Cracker pop + confetti burst from both sides of the box"""
+    colors = ["#ef4444", "#10b981", "#f59e0b", "#3b82f6", "#ec4899", "#facc15", "#a78bfa", "#22d3ee"]
+    pieces = []
+    for i in range(30):
+        angle = math.radians(random.uniform(200, 340))  # mostly upwards
+        dist = random.uniform(70, 190)
+        tx = int(math.cos(angle) * dist * 0.8)
+        ty = int(math.sin(angle) * dist)
+        rot = random.randint(-540, 540)
+        delay = random.uniform(0, 0.25)
+        color = colors[i % len(colors)]
+        origin = "left:34px;" if i % 2 == 0 else "left:calc(100% - 34px);"
+        if i % 2 == 1:
+            tx = -tx  # mirror so right-side pieces fly inwards/outwards nicely
+        pieces.append(
+            f'<span class="confetti" style="{origin}background:{color};'
+            f'--tx:{tx}px;--ty:{ty}px;--rot:{rot}deg;--d:{delay:.2f}s;"></span>'
+        )
+    confetti_html = "".join(pieces)
     render_html(f"""
     <div class="cracker-box">
     <span class="cracker-ico">{SVG_ICONS["cracker"]}</span>
-    <span>ശരിയായ ഉത്തരം! മികച്ച പ്രകടനം</span>
-    <span class="spark" style="background:#ef4444; --tx:-24px; --ty:-22px;"></span>
-    <span class="spark" style="background:#10b981; --tx:24px; --ty:-20px;"></span>
-    <span class="spark" style="background:#f59e0b; --tx:-20px; --ty:20px;"></span>
-    <span class="spark" style="background:#3b82f6; --tx:22px; --ty:22px;"></span>
-    <span class="spark" style="background:#ec4899; --tx:0px; --ty:-28px;"></span>
+    <span class="cracker-txt">ശരിയായ ഉത്തരം! മികച്ച പ്രകടനം</span>
+    {confetti_html}
     </div>
     """)
 
@@ -1102,4 +1147,8 @@ else:
     </div>
     """)
 
-    st.info("മുകളിൽ ഇടതുവശത്തെ › ബട്ടൺ അമർത്തി സൈഡ്‌ബാർ തുറന്ന് Language, Exam Level, Number of Questions, Topic എന്നിവ സെറ്റ് ചെയ്ത് **Start Exam** ക്ലിക്ക് ചെയ്യുക.")
+    render_html("""
+    <div class="log-card" style="border-left:5px solid #38bdf8;">
+    <p style="margin:0; color:#e2e8f0; line-height:1.7;">മുകളിൽ ഇടതുവശത്തെ <strong>»</strong> ബട്ടൺ അമർത്തി സൈഡ്‌ബാർ തുറന്ന് Language, Exam Level, Number of Questions, Topic എന്നിവ സെറ്റ് ചെയ്ത് <strong>Start Exam</strong> ക്ലിക്ക് ചെയ്യുക.</p>
+    </div>
+    """)
