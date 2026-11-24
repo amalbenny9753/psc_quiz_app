@@ -858,6 +858,7 @@ render_html(f"""
 if st.session_state.pending_start:
     _topic, _lang, _count, _level = st.session_state.pending_start
     st.session_state.pending_start = None
+    close_sidebar_js()  # collapse sidebar immediately, before the slow generation starts
     start_quiz(_topic, _lang, _count, _level)  # reruns on success
 
 # --- AUTO-CLOSE SIDEBAR AFTER EXAM STARTS ---
