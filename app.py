@@ -17,7 +17,7 @@ def render_html(html_str: str):
     """Render HTML cleanly without accidental Markdown code-block indentation"""
     st.markdown(textwrap.dedent(html_str).strip(), unsafe_allow_html=True)
 
-# --- RICH COLORFUL SVG ICONS (TRUE TURN INSPIRED) ---
+# --- RICH COLORFUL SVG ICONS ---
 SVG_ICONS = {
     "brand": (
         '<svg width="38" height="38" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">'
@@ -111,7 +111,7 @@ SVG_ICONS = {
     )
 }
 
-# --- DARK COLORFUL THEME + CLEAR LABEL VISIBILITY ---
+# --- DARK COLORFUL THEME + HIGH-CONTRAST OPTION FEEDBACK ---
 render_html("""
 <style>
 footer {visibility: hidden;}
@@ -147,7 +147,7 @@ padding-top: 1.15rem;
 padding-bottom: 3rem;
 }
 
-/* Make ALL Streamlit widget labels & text crisp and visible on dark background */
+/* Labels & widget text visibility */
 label, .stRadio label, .stSelectbox label, .stSlider label, .stTextInput label,
 [data-testid="stWidgetLabel"] p, [data-testid="stMarkdownContainer"] p,
 [data-testid="stMarkdownContainer"] h3, [data-testid="stMarkdownContainer"] h4 {
@@ -161,6 +161,44 @@ opacity: 1 !important;
 [data-testid="stThumbValue"] {
 color: #f8fafc !important;
 opacity: 1 !important;
+}
+
+/* Fix Streamlit alert text contrast so answered options are clearly readable */
+[data-testid="stAlert"] p,
+[data-testid="stAlert"] span,
+[data-testid="stAlert"] strong,
+[data-testid="stAlert"] div {
+color: #0f172a !important;
+opacity: 1 !important;
+}
+
+/* Custom high-contrast answered option cards */
+.opt-right {
+background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+border: 1.5px solid #34d399;
+border-radius: 12px;
+padding: 0.72rem 1rem;
+margin-bottom: 0.45rem;
+color: #ffffff !important;
+font-weight: 700;
+}
+.opt-wrong {
+background: linear-gradient(135deg, #9f1239 0%, #be123c 100%);
+border: 1.5px solid #fb7185;
+border-radius: 12px;
+padding: 0.72rem 1rem;
+margin-bottom: 0.45rem;
+color: #ffffff !important;
+font-weight: 700;
+}
+.opt-neutral {
+background: #111827;
+border: 1px solid #263554;
+border-radius: 12px;
+padding: 0.68rem 1rem;
+margin-bottom: 0.45rem;
+color: #cbd5e1 !important;
+font-weight: 600;
 }
 
 /* Top bar */
@@ -274,15 +312,6 @@ margin-bottom: 0.45rem;
 font-size: 0.85rem;
 font-weight: 700;
 color: #f8fafc !important;
-}
-
-/* Setup container card */
-.setup-card {
-background: #11192c;
-border: 1px solid #263659;
-border-radius: 20px;
-padding: 1.1rem 1.15rem;
-margin-bottom: 1rem;
 }
 
 /* Tags & Question */
@@ -663,11 +692,11 @@ def show_cracker():
     </div>
     """)
 
-# --- SIDEBAR ---
+# --- SIDEBAR (ALL SELECTION OPTIONS HERE) ---
 with st.sidebar:
     st.markdown("### Navigation")
 
-    if st.button("Home / Quiz Setup", use_container_width=True, key="sb_nav_home"):
+    if st.button("Home", use_container_width=True, key="sb_nav_home"):
         reset_to_home()
         st.rerun()
 
@@ -681,7 +710,7 @@ with st.sidebar:
             st.rerun()
 
     st.divider()
-    st.markdown("### Quiz Settings")
+    st.markdown("### Exam Options")
 
     sb_lang = st.radio(
         "Language",
@@ -736,20 +765,6 @@ render_html(f"""
 <span class="tag">Attempt #{st.session_state.attempt_count}</span>
 </div>
 """)
-
-top_c1, top_c2, top_c3 = st.columns(3)
-with top_c1:
-    if st.button("Home", use_container_width=True, key="top_home"):
-        reset_to_home()
-        st.rerun()
-with top_c2:
-    if st.button(f"Attempt Log ({len(st.session_state.attempt_logs)})", use_container_width=True, key="top_logs"):
-        st.session_state.page = "logs"
-        st.rerun()
-with top_c3:
-    if st.button("Quiz Setup", use_container_width=True, key="top_setup"):
-        st.session_state.page = "home"
-        st.rerun()
 
 # --- PAGE 1: ATTEMPT LOG PAGE ---
 if st.session_state.page == "logs":
@@ -903,11 +918,11 @@ elif st.session_state.page == "quiz" and st.session_state.questions:
         prefix = f"{chr(65 + i)})"
         if already_answered:
             if option == q["answer"]:
-                st.success(f"**{prefix} {option}** — Right Answer")
+                render_html(f"<div class='opt-right'>{prefix} {option} &nbsp;—&nbsp; Right Answer ✓</div>")
             elif option == selected:
-                st.error(f"**{prefix} {option}** — Your Answer")
+                render_html(f"<div class='opt-wrong'>{prefix} {option} &nbsp;—&nbsp; Your Answer ✗</div>")
             else:
-                render_html(f"<div style='padding:0.5rem 0.8rem; color:#cbd5e1; background:#111827; border-radius:10px; margin-bottom:0.35rem;'>{prefix} {option}</div>")
+                render_html(f"<div class='opt-neutral'>{prefix} {option}</div>")
         else:
             b_type = "primary" if selected == option else "secondary"
             if st.button(f"{prefix}  {option}", key=f"opt_{idx}_{i}", use_container_width=True, type=b_type):
@@ -987,25 +1002,4 @@ else:
     </div>
     """)
 
-    render_html('<div class="setup-card"><h3 style="margin:0 0 0.75rem 0; color:#ffffff;">Select & Start Exam</h3></div>')
-    h_col1, h_col2 = st.columns(2)
-    with h_col1:
-        h_lang = st.radio(
-            "Language",
-            ["English", "Malayalam"],
-            index=["English", "Malayalam"].index(st.session_state.cfg_lang),
-            horizontal=True,
-            key="h_lang"
-        )
-        h_level = st.selectbox(
-            "Exam Level",
-            ["10th/SSLC", "Plus Two", "Degree", "Post Graduate"],
-            index=["10th/SSLC", "Plus Two", "Degree", "Post Graduate"].index(st.session_state.cfg_level),
-            key="h_level"
-        )
-    with h_col2:
-        h_num_q = st.slider("Number of Questions", 5, 200, st.session_state.cfg_num_q, key="h_num_q")
-        h_topic = st.text_input("Topic", value=st.session_state.cfg_topic, placeholder="e.g., Indian Constitution", key="h_topic")
-
-    if st.button("Start Exam", type="primary", use_container_width=True, key="h_start_btn"):
-        start_quiz(h_topic, h_lang, h_num_q, h_level)
+    st.info("സൈഡ്‌ബാർ തുറന്ന് Language, Exam Level, Number of Questions, Topic എന്നിവ സെറ്റ് ചെയ്ത് **Start Exam** ക്ലിക്ക് ചെയ്യുക.")
