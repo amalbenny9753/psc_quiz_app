@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import google.generativeai as genai
 import json
 import textwrap
@@ -643,6 +644,10 @@ if "current_attempt_logged" not in st.session_state:
     st.session_state.current_attempt_logged = False
 if "just_answered_idx" not in st.session_state:
     st.session_state.just_answered_idx = None
+if "pending_start" not in st.session_state:
+    st.session_state.pending_start = None
+if "close_sidebar" not in st.session_state:
+    st.session_state.close_sidebar = False
 
 if "cfg_lang" not in st.session_state:
     st.session_state.cfg_lang = "English"
@@ -712,7 +717,38 @@ def start_quiz(topic_val: str, lang_val: str, count_val: int, level_val: str):
             st.session_state.just_answered_idx = None
             st.session_state.current_attempt_logged = False
             st.session_state.page = "quiz"
+            st.session_state.close_sidebar = True
             st.rerun()
+
+def close_sidebar_js():
+    """Programmatically collapse the sidebar (Streamlit has no official API for this)"""
+    components.html(
+        """
+        <script>
+        (function () {
+            var doc = window.parent.document;
+            var selectors = [
+                '[data-testid="stSidebarCollapseButton"] button',
+                '[data-testid="stSidebarCollapseButton"]',
+                'button[kind="header"][aria-label*="sidebar" i]',
+                '[data-testid="baseButton-header"]'
+            ];
+            var tries = 0;
+            var timer = setInterval(function () {
+                tries++;
+                var sidebar = doc.querySelector('[data-testid="stSidebar"]');
+                var open = sidebar && sidebar.getAttribute('aria-expanded') !== 'false';
+                if (!open || tries > 15) { clearInterval(timer); return; }
+                for (var i = 0; i < selectors.length; i++) {
+                    var el = doc.querySelector('[data-testid="stSidebar"] ' + selectors[i]) || doc.querySelector(selectors[i]);
+                    if (el) { el.click(); clearInterval(timer); return; }
+                }
+            }, 150);
+        })();
+        </script>
+        """,
+        height=0,
+    )
 
 def record_attempt_if_needed(summary: dict):
     if not st.session_state.current_attempt_logged:
@@ -779,7 +815,9 @@ with st.sidebar:
     sb_topic = st.text_input("Topic", value=st.session_state.cfg_topic, placeholder="e.g., Indian Constitution", key="sb_topic")
 
     if st.button("Start Exam", type="primary", use_container_width=True, key="sb_start_btn"):
-        start_quiz(sb_topic, sb_lang, sb_num_q, sb_level)
+        # Don't generate here (spinner would show inside the sidebar). Hand off to the main page.
+        st.session_state.pending_start = (sb_topic, sb_lang, sb_num_q, sb_level)
+        st.rerun()
 
     if st.session_state.questions:
         st.divider()
@@ -815,6 +853,17 @@ render_html(f"""
 <span class="tag">Attempt #{st.session_state.attempt_count}</span>
 </div>
 """)
+
+# --- PENDING EXAM START (spinner shows in the MAIN page) ---
+if st.session_state.pending_start:
+    _topic, _lang, _count, _level = st.session_state.pending_start
+    st.session_state.pending_start = None
+    start_quiz(_topic, _lang, _count, _level)  # reruns on success
+
+# --- AUTO-CLOSE SIDEBAR AFTER EXAM STARTS ---
+if st.session_state.close_sidebar:
+    st.session_state.close_sidebar = False
+    close_sidebar_js()
 
 # --- PAGE 1: ATTEMPT LOG PAGE ---
 if st.session_state.page == "logs":
