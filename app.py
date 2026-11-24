@@ -11,21 +11,25 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CUSTOM LAYOUT STYLING (LAYOUT ONLY) ---
+# --- CUSTOM LAYOUT STYLING (MOBILE SIDEBAR FIXED) ---
 st.markdown("""
 <style>
-    /* Hide Streamlit default header, menu, footer, and toolbar where possible */
-    #MainMenu {visibility: hidden;}
+    /* Hide footer and deploy/manage toolbar without hiding the sidebar toggle */
     footer {visibility: hidden;}
-    header {visibility: hidden;}
     [data-testid="stToolbar"] {display: none !important;}
     [data-testid="stDecoration"] {display: none !important;}
     .stDeployButton {display: none !important;}
+    #MainMenu {visibility: hidden;}
+
+    /* Keep header transparent so sidebar toggle button (>) stays visible & clickable */
+    header[data-testid="stHeader"] {
+        background-color: transparent !important;
+    }
 
     /* Main container spacing */
     .block-container {
         max-width: 920px;
-        padding-top: 2rem;
+        padding-top: 1.5rem;
         padding-bottom: 3rem;
     }
 
@@ -426,7 +430,7 @@ if st.session_state.questions:
                 st.metric("Performance", "Keep Going 💪")
 
 else:
-    st.info("👈 സൈഡ്‌ബാറിൽ Language, Level, Topic, ചോദ്യങ്ങളുടെ എണ്ണം എന്നിവ സെറ്റ് ചെയ്ത് **Generate New Quiz** ക്ലിക്ക് ചെയ്യുക.")
+    st.info("👈 മുകളിൽ ഇടതുവശത്തുള്ള **`>`** ബട്ടൺ ടാപ്പ് ചെയ്ത് സൈഡ്‌ബാർ തുറക്കുക; എന്നിട്ട് Language, Level, Topic, ചോദ്യങ്ങളുടെ എണ്ണം എന്നിവ സെറ്റ് ചെയ്ത് **Generate New Quiz** ക്ലിക്ക് ചെയ്യുക.")
 
     c1, c2, c3 = st.columns(3)
     with c1:
