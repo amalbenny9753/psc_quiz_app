@@ -17,33 +17,101 @@ def render_html(html_str: str):
     """Render HTML cleanly without accidental Markdown code-block indentation"""
     st.markdown(textwrap.dedent(html_str).strip(), unsafe_allow_html=True)
 
-# --- CUSTOM SVG ICONS ---
+# --- RICH COLORFUL SVG ICONS (TRUE TURN INSPIRED) ---
 SVG_ICONS = {
     "brand": (
-        '<svg width="34" height="34" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">'
-        '<rect width="36" height="36" rx="10" fill="#2563EB"/>'
-        '<path d="M10 11.5C10 10.1193 11.1193 9 12.5 9H17.5V27H12.5C11.1193 27 10 25.8807 10 24.5V11.5Z" fill="#93C5FD"/>'
-        '<path d="M26 11.5C26 10.1193 24.8807 9 23.5 9H18.5V27H23.5C24.8807 27 26 25.8807 26 24.5V11.5Z" fill="#34D399"/>'
+        '<svg width="38" height="38" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">'
+        '<rect width="40" height="40" rx="12" fill="url(#brandGrad)"/>'
+        '<path d="M11 12.5C11 11.1193 12.1193 10 13.5 10H19V30H13.5C12.1193 30 11 28.8807 11 27.5V12.5Z" fill="#FDE047"/>'
+        '<path d="M29 12.5C29 11.1193 27.8807 10 26.5 10H21V30H26.5C27.8807 30 29 28.8807 29 27.5V12.5Z" fill="#34D399"/>'
+        '<circle cx="20" cy="19" r="3.4" fill="#FB7185"/>'
+        '<defs><linearGradient id="brandGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">'
+        '<stop stop-color="#2563EB"/><stop offset="1" stop-color="#7C3AED"/></linearGradient></defs>'
+        '</svg>'
+    ),
+    "trophy": (
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none">'
+        '<path d="M7 4H17V10C17 12.7614 14.7614 15 12 15C9.23858 15 7 12.7614 7 10V4Z" fill="#FACC15" stroke="#FEF08A" stroke-width="1.5"/>'
+        '<path d="M7 6H4.5C4.5 9 6 10.5 7.5 11M17 6H19.5C19.5 9 18 10.5 16.5 11" stroke="#FBBF24" stroke-width="1.8" stroke-linecap="round"/>'
+        '<path d="M10 15H14V18H10V15ZM8 18H16V20.5H8V18Z" fill="#F59E0B"/>'
+        '</svg>'
+    ),
+    "target_score": (
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none">'
+        '<circle cx="12" cy="12" r="9" fill="#10B981" fill-opacity="0.22" stroke="#34D399" stroke-width="2"/>'
+        '<circle cx="12" cy="12" r="5" fill="#10B981" fill-opacity="0.45" stroke="#6EE7B7" stroke-width="1.8"/>'
+        '<circle cx="12" cy="12" r="2" fill="#A7F3D0"/>'
+        '</svg>'
+    ),
+    "focus_book": (
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none">'
+        '<rect x="3" y="4" width="18" height="16" rx="3" fill="#FB7185" fill-opacity="0.25" stroke="#F43F5E" stroke-width="1.8"/>'
+        '<line x1="12" y1="4" x2="12" y2="20" stroke="#FDA4AF" stroke-width="1.8"/>'
+        '<path d="M6.5 8.5H9.5M6.5 12H9.5M14.5 8.5H17.5M14.5 12H17.5" stroke="#FFE4E6" stroke-width="1.6" stroke-linecap="round"/>'
+        '</svg>'
+    ),
+    "history_icon": (
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none">'
+        '<circle cx="12" cy="12" r="9" fill="#3B82F6" fill-opacity="0.25" stroke="#60A5FA" stroke-width="2"/>'
+        '<path d="M12 7V12L15.5 14" stroke="#93C5FD" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'
+        '</svg>'
+    ),
+    "const_icon": (
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none">'
+        '<rect x="4" y="3" width="16" height="18" rx="3" fill="#10B981" fill-opacity="0.25" stroke="#34D399" stroke-width="2"/>'
+        '<path d="M8 8H16M8 12H16M8 16H13" stroke="#A7F3D0" stroke-width="2" stroke-linecap="round"/>'
+        '</svg>'
+    ),
+    "ca_icon": (
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none">'
+        '<rect x="3" y="5" width="18" height="15" rx="3" fill="#F59E0B" fill-opacity="0.25" stroke="#FBBF24" stroke-width="2"/>'
+        '<path d="M3 10H21" stroke="#FDE047" stroke-width="2"/>'
+        '<circle cx="8" cy="15" r="1.5" fill="#FEF08A"/>'
+        '<path d="M12 15H17" stroke="#FEF08A" stroke-width="2" stroke-linecap="round"/>'
         '</svg>'
     ),
     "bulb": (
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FBBF24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'
-        '<path d="M9 18h6"/>'
-        '<path d="M10 22h4"/>'
-        '<path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>'
+        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none">'
+        '<path d="M9 18H15M10 21H14" stroke="#FACC15" stroke-width="2.2" stroke-linecap="round"/>'
+        '<path d="M15.2 14.2C16.4 13.1 17.5 11.4 17.5 9.2C17.5 6.16 15.04 3.7 12 3.7C8.96 3.7 6.5 6.16 6.5 9.2C6.5 11.4 7.6 13.1 8.8 14.2C9.3 14.7 9.6 15.3 9.7 16H14.3C14.4 15.3 14.7 14.7 15.2 14.2Z" fill="#FACC15" fill-opacity="0.3" stroke="#FDE047" stroke-width="2"/>'
         '</svg>'
     ),
     "cracker": (
-        '<svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">'
-        '<path d="M6 26L14 12L20 18L6 26Z" fill="#F59E0B" stroke="#FDE047" stroke-width="1.6" stroke-linejoin="round"/>'
-        '<circle cx="22" cy="8" r="2.3" fill="#F472B6"/>'
-        '<circle cx="26" cy="13" r="2.1" fill="#34D399"/>'
-        '<circle cx="18" cy="6" r="1.9" fill="#60A5FA"/>'
+        '<svg width="26" height="26" viewBox="0 0 32 32" fill="none">'
+        '<path d="M6 26L14 12L20 18L6 26Z" fill="#F59E0B" stroke="#FDE047" stroke-width="1.8" stroke-linejoin="round"/>'
+        '<circle cx="22" cy="8" r="2.5" fill="#F472B6"/>'
+        '<circle cx="26" cy="13" r="2.2" fill="#34D399"/>'
+        '<circle cx="18" cy="6" r="2" fill="#60A5FA"/>'
+        '<circle cx="25" cy="21" r="2" fill="#FACC15"/>'
+        '</svg>'
+    ),
+    "right_sym": (
+        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none">'
+        '<circle cx="12" cy="12" r="10" fill="#10B981" fill-opacity="0.25" stroke="#34D399" stroke-width="2"/>'
+        '<polyline points="7.5 12.5 10.5 15.5 16.5 9" stroke="#6EE7B7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'
+        '</svg>'
+    ),
+    "wrong_sym": (
+        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none">'
+        '<circle cx="12" cy="12" r="10" fill="#F43F5E" fill-opacity="0.25" stroke="#FB7185" stroke-width="2"/>'
+        '<line x1="8.5" y1="8.5" x2="15.5" y2="15.5" stroke="#FDA4AF" stroke-width="2.5" stroke-linecap="round"/>'
+        '<line x1="15.5" y1="8.5" x2="8.5" y2="15.5" stroke="#FDA4AF" stroke-width="2.5" stroke-linecap="round"/>'
+        '</svg>'
+    ),
+    "attempt_sym": (
+        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none">'
+        '<circle cx="12" cy="12" r="10" fill="#3B82F6" fill-opacity="0.25" stroke="#60A5FA" stroke-width="2"/>'
+        '<path d="M12 7V12L15 14" stroke="#93C5FD" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>'
+        '</svg>'
+    ),
+    "marks_sym": (
+        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none">'
+        '<polygon points="12 2.5 14.9 8.4 21.4 9.3 16.7 13.9 17.8 20.4 12 17.3 6.2 20.4 7.3 13.9 2.6 9.3 9.1 8.4 12 2.5" fill="#F59E0B" fill-opacity="0.3" stroke="#FDE047" stroke-width="1.8" stroke-linejoin="round"/>'
         '</svg>'
     )
 }
 
-# --- DARK MODERN APP THEME (REFERENCE INSPIRED) ---
+# --- DARK COLORFUL THEME + CLEAR LABEL VISIBILITY ---
 render_html("""
 <style>
 footer {visibility: hidden;}
@@ -58,8 +126,8 @@ background-color: transparent !important;
 visibility: visible !important;
 }
 [data-testid="stSidebar"] {
-background-color: #0f172a !important;
-border-right: 1px solid #1e293b !important;
+background-color: #0e1525 !important;
+border-right: 1px solid #24324d !important;
 visibility: visible !important;
 }
 [data-testid="stSidebarCollapsedControl"] {
@@ -69,26 +137,43 @@ z-index: 999999 !important;
 }
 
 .stApp {
-background-color: #090d16;
-color: #f1f5f9;
+background-color: #080c14;
+color: #f8fafc;
 }
 
 .block-container {
 max-width: 960px;
-padding-top: 1.2rem;
+padding-top: 1.15rem;
 padding-bottom: 3rem;
 }
 
-/* Top app bar */
+/* Make ALL Streamlit widget labels & text crisp and visible on dark background */
+label, .stRadio label, .stSelectbox label, .stSlider label, .stTextInput label,
+[data-testid="stWidgetLabel"] p, [data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] h3, [data-testid="stMarkdownContainer"] h4 {
+color: #f1f5f9 !important;
+opacity: 1 !important;
+}
+.stRadio div[role="radiogroup"] label span,
+.stSelectbox div[data-baseweb="select"] span,
+.stSlider div[data-testid="stTickBarMin"],
+.stSlider div[data-testid="stTickBarMax"],
+[data-testid="stThumbValue"] {
+color: #f8fafc !important;
+opacity: 1 !important;
+}
+
+/* Top bar */
 .top-app-bar {
 display: flex;
 align-items: center;
 justify-content: space-between;
-background: #111827;
-border: 1px solid #1f2937;
+background: linear-gradient(135deg, #111b31 0%, #16223d 100%);
+border: 1px solid #28385c;
 border-radius: 18px;
 padding: 0.9rem 1.15rem;
-margin-bottom: 1rem;
+margin-bottom: 0.85rem;
+box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
 }
 .top-app-left {
 display: flex;
@@ -97,28 +182,30 @@ gap: 12px;
 }
 .top-app-sub {
 font-size: 0.78rem;
-color: #94a3b8;
+color: #93c5fd !important;
 margin: 0;
+font-weight: 600;
 }
 .top-app-title {
 font-size: 1.18rem;
 font-weight: 800;
-color: #f8fafc;
+color: #ffffff !important;
 margin: 0;
 }
 
-/* Status card */
+/* Preparation status panel */
 .prep-panel {
-background: #131b2e;
-border: 1px solid #23304d;
+background: linear-gradient(145deg, #121c33 0%, #17233f 100%);
+border: 1px solid #28395e;
 border-radius: 20px;
 padding: 1.1rem;
-margin-bottom: 1rem;
+margin-bottom: 0.9rem;
+box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
 }
 .prep-title {
 font-size: 1.05rem;
-font-weight: 700;
-color: #f8fafc;
+font-weight: 800;
+color: #ffffff !important;
 margin: 0 0 0.85rem 0;
 }
 .mini-stat-grid {
@@ -127,55 +214,78 @@ grid-template-columns: repeat(3, 1fr);
 gap: 0.65rem;
 }
 .mini-stat-card {
-background: #1c2740;
-border: 1px solid #2b3b5e;
-border-radius: 14px;
-padding: 0.8rem 0.6rem;
+background: #1b2847;
+border: 1px solid #2f4370;
+border-radius: 16px;
+padding: 0.85rem 0.55rem;
 text-align: center;
 }
+.mini-stat-icon {
+display: flex;
+justify-content: center;
+margin-bottom: 0.3rem;
+}
 .mini-stat-val {
-font-size: 1.15rem;
+font-size: 1.1rem;
 font-weight: 800;
-color: #f8fafc;
-margin-top: 0.3rem;
+color: #ffffff !important;
 }
 .mini-stat-lbl {
-font-size: 0.76rem;
-color: #94a3b8;
-margin-top: 0.15rem;
+font-size: 0.75rem;
+color: #cbd5e1 !important;
+margin-top: 0.2rem;
+font-weight: 600;
 }
 
-/* Category tiles */
+/* Colorful category tiles */
 .cat-grid {
 display: grid;
 grid-template-columns: repeat(3, 1fr);
 gap: 0.65rem;
 margin-bottom: 1rem;
 }
-.cat-tile {
-background: #141c2f;
-border: 1px solid #24304c;
+.cat-tile-blue {
+background: linear-gradient(160deg, #15223d 0%, #10192e 100%);
+border: 1px solid #2b4c8c;
 border-radius: 16px;
-padding: 0.95rem 0.65rem;
+padding: 0.95rem 0.6rem;
 text-align: center;
 }
-.cat-badge {
-display: inline-block;
-width: 34px;
-height: 34px;
-line-height: 34px;
-border-radius: 10px;
-font-weight: 800;
-font-size: 0.9rem;
+.cat-tile-green {
+background: linear-gradient(160deg, #102a26 0%, #0d1d24 100%);
+border: 1px solid #1e6b58;
+border-radius: 16px;
+padding: 0.95rem 0.6rem;
+text-align: center;
+}
+.cat-tile-amber {
+background: linear-gradient(160deg, #2b2112 0%, #191614 100%);
+border: 1px solid #8a5a18;
+border-radius: 16px;
+padding: 0.95rem 0.6rem;
+text-align: center;
+}
+.cat-icon {
+display: flex;
+justify-content: center;
 margin-bottom: 0.45rem;
 }
 .cat-name {
-font-size: 0.86rem;
+font-size: 0.85rem;
 font-weight: 700;
-color: #e2e8f0;
+color: #f8fafc !important;
 }
 
-/* Question & meta */
+/* Setup container card */
+.setup-card {
+background: #11192c;
+border: 1px solid #263659;
+border-radius: 20px;
+padding: 1.1rem 1.15rem;
+margin-bottom: 1rem;
+}
+
+/* Tags & Question */
 .meta-row {
 display: flex;
 flex-wrap: wrap;
@@ -183,29 +293,29 @@ gap: 0.45rem;
 margin-bottom: 0.85rem;
 }
 .tag {
-padding: 0.25rem 0.7rem;
+padding: 0.26rem 0.72rem;
 border-radius: 999px;
 font-size: 0.78rem;
 font-weight: 700;
-background: #1e293b;
-color: #93c5fd;
-border: 1px solid #334155;
+background: #1d2b4a;
+color: #93c5fd !important;
+border: 1px solid #364f82;
 }
 .tag-green {
 background: #064e3b;
-color: #6ee7b7;
-border-color: #059669;
+color: #6ee7b7 !important;
+border-color: #10b981;
 }
 .tag-red {
 background: #4c0519;
-color: #fda4af;
-border-color: #e11d48;
+color: #fda4af !important;
+border-color: #f43f5e;
 }
 
 .q-box {
-background: #131b2e;
-border: 1px solid #263554;
-border-left: 5px solid #3b82f6;
+background: linear-gradient(135deg, #131d34 0%, #192642 100%);
+border: 1px solid #2c3f69;
+border-left: 6px solid #38bdf8;
 border-radius: 16px;
 padding: 1.2rem 1.35rem;
 margin-bottom: 1rem;
@@ -213,12 +323,12 @@ margin-bottom: 1rem;
 .q-text {
 font-size: 1.08rem;
 font-weight: 700;
-line-height: 1.6;
-color: #f8fafc;
+line-height: 1.62;
+color: #ffffff !important;
 margin: 0;
 }
 
-/* Cracker animation for right answer */
+/* Cracker animation */
 @keyframes crackerPop {
 0% { transform: scale(0.75) rotate(-8deg); opacity: 0.3; }
 50% { transform: scale(1.15) rotate(6deg); opacity: 1; }
@@ -234,12 +344,12 @@ overflow: hidden;
 display: flex;
 align-items: center;
 gap: 10px;
-background: linear-gradient(120deg, #064e3b 0%, #065f46 60%, #115e59 100%);
-border: 1px solid #10b981;
+background: linear-gradient(120deg, #064e3b 0%, #065f46 60%, #0f766e 100%);
+border: 1px solid #34d399;
 border-radius: 14px;
 padding: 0.75rem 1rem;
 margin: 0.5rem 0 0.8rem 0;
-color: #ecfdf5;
+color: #ecfdf5 !important;
 font-weight: 700;
 }
 .cracker-ico {
@@ -262,13 +372,13 @@ pointer-events: none;
 display: flex;
 gap: 10px;
 align-items: flex-start;
-background: #1c1917;
-border: 1px solid #78350f;
-border-left: 5px solid #f59e0b;
+background: #1f1a12;
+border: 1px solid #92400e;
+border-left: 5px solid #facc15;
 border-radius: 14px;
 padding: 0.95rem 1.1rem;
 margin-top: 0.8rem;
-color: #fde68a;
+color: #fef08a !important;
 }
 
 /* Colorful score blocks on finish page */
@@ -279,53 +389,61 @@ gap: 0.75rem;
 margin: 0.85rem 0 1.1rem 0;
 }
 .block-attempt {
-background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+border: 1px solid #60a5fa;
 border-radius: 16px;
 padding: 1rem;
-color: #ffffff;
+color: #ffffff !important;
 }
 .block-right {
-background: linear-gradient(135deg, #047857 0%, #10b981 100%);
+background: linear-gradient(135deg, #065f46 0%, #10b981 100%);
+border: 1px solid #34d399;
 border-radius: 16px;
 padding: 1rem;
-color: #ffffff;
+color: #ffffff !important;
 }
 .block-wrong {
-background: linear-gradient(135deg, #be123c 0%, #f43f5e 100%);
+background: linear-gradient(135deg, #9f1239 0%, #f43f5e 100%);
+border: 1px solid #fb7185;
 border-radius: 16px;
 padding: 1rem;
-color: #ffffff;
+color: #ffffff !important;
 }
 .block-score {
-background: linear-gradient(135deg, #b45309 0%, #f59e0b 100%);
+background: linear-gradient(135deg, #92400e 0%, #f59e0b 100%);
+border: 1px solid #fbbf24;
 border-radius: 16px;
 padding: 1rem;
-color: #ffffff;
+color: #ffffff !important;
 }
-.block-label {
-font-size: 0.82rem;
-font-weight: 700;
-opacity: 0.92;
+.block-head {
+display: flex;
+align-items: center;
+gap: 7px;
+font-size: 0.84rem;
+font-weight: 800;
+color: #ffffff !important;
 }
 .block-num {
-font-size: 1.55rem;
+font-size: 1.5rem;
 font-weight: 800;
-margin-top: 0.25rem;
+margin-top: 0.35rem;
+color: #ffffff !important;
 }
 
 .improve-card {
-background: #1f121b;
-border: 1px solid #881337;
+background: #23121d;
+border: 1px solid #9f1239;
 border-left: 5px solid #fb7185;
 border-radius: 16px;
 padding: 1rem 1.15rem;
-color: #ffe4e6;
+color: #ffe4e6 !important;
 margin-bottom: 1rem;
 }
 
 .log-card {
-background: #131b2e;
-border: 1px solid #263554;
+background: #131d34;
+border: 1px solid #2b3f69;
 border-radius: 16px;
 padding: 1rem 1.15rem;
 margin-bottom: 0.75rem;
@@ -335,16 +453,16 @@ margin-bottom: 0.75rem;
 div.stButton > button {
 border-radius: 12px !important;
 font-weight: 700 !important;
-border: 1px solid #2c3e63 !important;
-background-color: #172136 !important;
-color: #f1f5f9 !important;
+border: 1px solid #324975 !important;
+background-color: #18243d !important;
+color: #f8fafc !important;
 }
 div.stButton > button:hover {
-border-color: #3b82f6 !important;
-background-color: #1e2d4a !important;
+border-color: #60a5fa !important;
+background-color: #213254 !important;
 }
 div.stButton > button[kind="primary"] {
-background: linear-gradient(90deg, #2563eb 0%, #0d9488 100%) !important;
+background: linear-gradient(90deg, #2563eb 0%, #7c3aed 55%, #0d9488 100%) !important;
 color: #ffffff !important;
 border: none !important;
 }
@@ -492,7 +610,7 @@ def calculate_summary() -> dict:
     }
 
 def reset_to_home():
-    """Clear active quiz state and go back to Home; new questions come only when selected & generated"""
+    """Clear active quiz state and return to Home; new questions load only after selecting & starting"""
     st.session_state.questions = None
     st.session_state.current_idx = 0
     st.session_state.user_answers = {}
@@ -545,7 +663,7 @@ def show_cracker():
     </div>
     """)
 
-# --- SIDEBAR (NAVIGATION + SETUP + ATTEMPT LOG OPTION) ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.markdown("### Navigation")
 
@@ -605,7 +723,7 @@ with st.sidebar:
                             st.session_state.page = "quiz"
                             st.rerun()
 
-# --- TOP APP HEADER ---
+# --- TOP HEADER ---
 render_html(f"""
 <div class="top-app-bar">
 <div class="top-app-left">
@@ -619,7 +737,6 @@ render_html(f"""
 </div>
 """)
 
-# Quick top navigation bar so mobile users can also switch smoothly
 top_c1, top_c2, top_c3 = st.columns(3)
 with top_c1:
     if st.button("Home", use_container_width=True, key="top_home"):
@@ -642,7 +759,7 @@ if st.session_state.page == "logs":
     if not logs:
         render_html("""
         <div class="log-card">
-        <p style="margin:0; color:#cbd5e1;">ഇതുവരെ ഒരു exam-ഉം പൂർത്തിയാക്കിയിട്ടില്ല. Quiz എഴുതി Finish ചെയ്യുമ്പോൾ വിവരങ്ങൾ ഇവിടെ കാണാം.</p>
+        <p style="margin:0; color:#e2e8f0;">ഇതുവരെ ഒരു exam-ഉം പൂർത്തിയാക്കിയിട്ടില്ല. Quiz എഴുതി Finish ചെയ്യുമ്പോൾ വിവരങ്ങൾ ഇവിടെ കാണാം.</p>
         </div>
         """)
     else:
@@ -660,10 +777,10 @@ if st.session_state.page == "logs":
             render_html(f"""
             <div class="log-card">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
-            <strong style="font-size:1rem; color:#f8fafc;">{item['topic']}</strong>
+            <strong style="font-size:1rem; color:#ffffff;">{item['topic']}</strong>
             <span class="tag">Attempt #{item['attempt']}</span>
             </div>
-            <p style="margin:0.35rem 0 0.55rem 0; font-size:0.84rem; color:#94a3b8;">
+            <p style="margin:0.35rem 0 0.55rem 0; font-size:0.84rem; color:#cbd5e1;">
             Level: {item['level']} • Language: {item['lang']} • {item['time']}
             </p>
             <div style="display:flex; flex-wrap:wrap; gap:8px;">
@@ -692,19 +809,19 @@ elif st.session_state.page == "score" and st.session_state.questions:
     </div>
     <div class="result-grid">
     <div class="block-attempt">
-    <div class="block-label">ATTEMPT NUMBER</div>
+    <div class="block-head">{SVG_ICONS["attempt_sym"]}<span>ATTEMPT NUMBER</span></div>
     <div class="block-num">#{s['attempt']}</div>
     </div>
     <div class="block-score">
-    <div class="block-label">TOTAL MARKS</div>
+    <div class="block-head">{SVG_ICONS["marks_sym"]}<span>TOTAL MARKS</span></div>
     <div class="block-num">{s['correct']} / {s['total']} ({s['percent']:.1f}%)</div>
     </div>
     <div class="block-right">
-    <div class="block-label">RIGHT ANSWERS</div>
+    <div class="block-head">{SVG_ICONS["right_sym"]}<span>RIGHT ANSWERS</span></div>
     <div class="block-num">{s['correct']}</div>
     </div>
     <div class="block-wrong">
-    <div class="block-label">WRONG ANSWERS</div>
+    <div class="block-head">{SVG_ICONS["wrong_sym"]}<span>WRONG ANSWERS</span></div>
     <div class="block-num">{s['wrong']}</div>
     </div>
     </div>
@@ -713,12 +830,11 @@ elif st.session_state.page == "score" and st.session_state.questions:
     if s["unanswered"] > 0:
         st.info(f"Unanswered Questions: {s['unanswered']}")
 
-    # Areas to Improve
     if s["wrong_items"] or s["unanswered"] > 0:
         items_html = ""
         for q_no, q_txt, u_ans, c_ans in s["wrong_items"]:
             items_html += (
-                f"<div style='margin-bottom:0.65rem; padding-bottom:0.5rem; border-bottom:1px solid #4c0519;'>"
+                f"<div style='margin-bottom:0.65rem; padding-bottom:0.5rem; border-bottom:1px solid #6b142d;'>"
                 f"<strong>Q{q_no}:</strong> {q_txt}<br>"
                 f"<span style='color:#fda4af;'>Your Answer:</span> {u_ans} &nbsp;|&nbsp; "
                 f"<span style='color:#6ee7b7;'>Right Answer:</span> <strong>{c_ans}</strong>"
@@ -791,7 +907,7 @@ elif st.session_state.page == "quiz" and st.session_state.questions:
             elif option == selected:
                 st.error(f"**{prefix} {option}** — Your Answer")
             else:
-                render_html(f"<div style='padding:0.5rem 0.8rem; color:#94a3b8; background:#111827; border-radius:10px; margin-bottom:0.35rem;'>{prefix} {option}</div>")
+                render_html(f"<div style='padding:0.5rem 0.8rem; color:#cbd5e1; background:#111827; border-radius:10px; margin-bottom:0.35rem;'>{prefix} {option}</div>")
         else:
             b_type = "primary" if selected == option else "secondary"
             if st.button(f"{prefix}  {option}", key=f"opt_{idx}_{i}", use_container_width=True, type=b_type):
@@ -828,7 +944,7 @@ elif st.session_state.page == "quiz" and st.session_state.questions:
                 st.session_state.page = "score"
                 st.rerun()
 
-# --- PAGE 4: HOME PAGE (NO QUIZ LOADED UNTIL SELECTED & STARTED) ---
+# --- PAGE 4: HOME PAGE ---
 else:
     logs = st.session_state.attempt_logs
     avg_score = f"{(sum(x['percent'] for x in logs)/len(logs)):.1f}%" if logs else "0.0%"
@@ -839,36 +955,39 @@ else:
     <div class="prep-title">Your Preparation Status</div>
     <div class="mini-stat-grid">
     <div class="mini-stat-card">
+    <div class="mini-stat-icon">{SVG_ICONS["trophy"]}</div>
     <div class="mini-stat-val">#{st.session_state.attempt_count}</div>
     <div class="mini-stat-lbl">Current Attempt</div>
     </div>
     <div class="mini-stat-card">
+    <div class="mini-stat-icon">{SVG_ICONS["target_score"]}</div>
     <div class="mini-stat-val">{avg_score}</div>
     <div class="mini-stat-lbl">Average Score</div>
     </div>
     <div class="mini-stat-card">
+    <div class="mini-stat-icon">{SVG_ICONS["focus_book"]}</div>
     <div class="mini-stat-val" style="font-size:0.95rem;">{weak_area}</div>
     <div class="mini-stat-lbl">Focus Topic</div>
     </div>
     </div>
     </div>
     <div class="cat-grid">
-    <div class="cat-tile">
-    <div class="cat-badge" style="background:#1e3a8a; color:#93c5fd;">KH</div>
+    <div class="cat-tile-blue">
+    <div class="cat-icon">{SVG_ICONS["history_icon"]}</div>
     <div class="cat-name">Kerala History</div>
     </div>
-    <div class="cat-tile">
-    <div class="cat-badge" style="background:#064e3b; color:#6ee7b7;">IC</div>
+    <div class="cat-tile-green">
+    <div class="cat-icon">{SVG_ICONS["const_icon"]}</div>
     <div class="cat-name">Constitution</div>
     </div>
-    <div class="cat-tile">
-    <div class="cat-badge" style="background:#78350f; color:#fde68a;">CA</div>
+    <div class="cat-tile-amber">
+    <div class="cat-icon">{SVG_ICONS["ca_icon"]}</div>
     <div class="cat-name">Current Affairs</div>
     </div>
     </div>
     """)
 
-    st.markdown("### Select & Start Exam")
+    render_html('<div class="setup-card"><h3 style="margin:0 0 0.75rem 0; color:#ffffff;">Select & Start Exam</h3></div>')
     h_col1, h_col2 = st.columns(2)
     with h_col1:
         h_lang = st.radio(
