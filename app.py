@@ -11,19 +11,25 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CUSTOM LAYOUT STYLING (MOBILE SIDEBAR FIXED) ---
+# --- CUSTOM LAYOUT STYLING ---
 st.markdown("""
 <style>
-    /* Hide footer and deploy/manage toolbar without hiding the sidebar toggle */
+    /* Hide footer and deploy/manage toolbar */
     footer {visibility: hidden;}
     [data-testid="stToolbar"] {display: none !important;}
     [data-testid="stDecoration"] {display: none !important;}
     .stDeployButton {display: none !important;}
     #MainMenu {visibility: hidden;}
 
-    /* Keep header transparent so sidebar toggle button (>) stays visible & clickable */
+    /* Keep header visible with transparent background so sidebar toggle works */
     header[data-testid="stHeader"] {
         background-color: transparent !important;
+        visibility: visible !important;
+    }
+    [data-testid="stSidebarCollapsedControl"] {
+        visibility: visible !important;
+        display: flex !important;
+        z-index: 999999 !important;
     }
 
     /* Main container spacing */
@@ -244,6 +250,32 @@ if "user_answers" not in st.session_state:
 if "quiz_submitted" not in st.session_state:
     st.session_state.quiz_submitted = False
 
+# Default quiz settings in session state so both sidebar and main expander stay in sync
+if "cfg_lang" not in st.session_state:
+    st.session_state.cfg_lang = "English"
+if "cfg_level" not in st.session_state:
+    st.session_state.cfg_level = "10th/SSLC"
+if "cfg_num_q" not in st.session_state:
+    st.session_state.cfg_num_q = 10
+if "cfg_topic" not in st.session_state:
+    st.session_state.cfg_topic = "Kerala History"
+
+def run_generate_quiz(topic_val, lang_val, count_val, level_val):
+    st.session_state.cfg_topic = topic_val
+    st.session_state.cfg_lang = lang_val
+    st.session_state.cfg_num_q = count_val
+    st.session_state.cfg_level = level_val
+
+    with st.spinner("Generating questions... This may take a moment."):
+        questions = get_psc_questions(topic_val, lang_val, count_val, level_val)
+        if questions:
+            st.session_state.questions = questions
+            st.session_state.current_idx = 0
+            st.session_state.user_answers = {}
+            st.session_state.quiz_submitted = False
+            st.success(f"✅ Generated {len(questions)} questions!")
+            st.rerun()
+
 # --- HERO HEADER ---
 st.markdown("""
 <div class="quiz-hero">
@@ -256,27 +288,20 @@ st.markdown("""
 with st.sidebar:
     st.markdown("### ⚙️ Quiz Setup")
 
-    lang = st.radio("Language", ["English", "Malayalam"], index=0, horizontal=True)
-    level = st.selectbox(
+    sb_lang = st.radio("Language", ["English", "Malayalam"], index=["English", "Malayalam"].index(st.session_state.cfg_lang), horizontal=True, key="sb_lang")
+    sb_level = st.selectbox(
         "Exam Level",
-        ["10th/SSLC", "Plus Two", "Degree", "Post Graduate"]
+        ["10th/SSLC", "Plus Two", "Degree", "Post Graduate"],
+        index=["10th/SSLC", "Plus Two", "Degree", "Post Graduate"].index(st.session_state.cfg_level),
+        key="sb_level"
     )
-    num_q = st.slider("Number of Questions", 5, 200, 10)
-    topic = st.text_input("Topic", "Kerala History", placeholder="e.g., Indian Constitution")
+    sb_num_q = st.slider("Number of Questions", 5, 200, st.session_state.cfg_num_q, key="sb_num_q")
+    sb_topic = st.text_input("Topic", value=st.session_state.cfg_topic, placeholder="e.g., Indian Constitution", key="sb_topic")
 
     st.divider()
 
-    if st.button("🎯 Generate New Quiz", type="primary", use_container_width=True):
-        with st.spinner("Generating questions... This may take a moment."):
-            questions = get_psc_questions(topic, lang, num_q, level)
-
-            if questions:
-                st.session_state.questions = questions
-                st.session_state.current_idx = 0
-                st.session_state.user_answers = {}
-                st.session_state.quiz_submitted = False
-                st.success(f"✅ Generated {len(questions)} questions!")
-                st.rerun()
+    if st.button("🎯 Generate New Quiz", type="primary", use_container_width=True, key="sb_gen_btn"):
+        run_generate_quiz(sb_topic, sb_lang, sb_num_q, sb_level)
 
     if st.session_state.questions:
         st.divider()
@@ -293,7 +318,7 @@ with st.sidebar:
             correct, percentage = calculate_score()
             st.metric("Current Score", f"{correct}/{answered}", f"{percentage:.1f}%")
 
-        if st.button("🔄 Reset Quiz", use_container_width=True):
+        if st.button("🔄 Reset Quiz", use_container_width=True, key="sb_reset_btn"):
             st.session_state.user_answers = {}
             st.session_state.current_idx = 0
             st.session_state.quiz_submitted = False
@@ -324,6 +349,30 @@ with st.sidebar:
                             st.session_state.current_idx = q_num
                             st.rerun()
 
+# --- DIRECT IN-PAGE SETUP PANEL (WORKS EVEN IF SIDEBAR IS HIDDEN ON MOBILE) ---
+with st.expander("⚙️ Quiz Setup (Mobile / Quick Access)", expanded=(st.session_state.questions is None)):
+    m_col1, m_col2 = st.columns(2)
+    with m_col1:
+        m_lang = st.radio(
+            "Language",
+            ["English", "Malayalam"],
+            index=["English", "Malayalam"].index(st.session_state.cfg_lang),
+            horizontal=True,
+            key="m_lang"
+        )
+        m_level = st.selectbox(
+            "Exam Level",
+            ["10th/SSLC", "Plus Two", "Degree", "Post Graduate"],
+            index=["10th/SSLC", "Plus Two", "Degree", "Post Graduate"].index(st.session_state.cfg_level),
+            key="m_level"
+        )
+    with m_col2:
+        m_num_q = st.slider("Number of Questions", 5, 200, st.session_state.cfg_num_q, key="m_num_q")
+        m_topic = st.text_input("Topic", value=st.session_state.cfg_topic, placeholder="e.g., Indian Constitution", key="m_topic")
+
+    if st.button("🎯 Generate New Quiz", type="primary", use_container_width=True, key="m_gen_btn"):
+        run_generate_quiz(m_topic, m_lang, m_num_q, m_level)
+
 # --- MAIN QUIZ INTERFACE ---
 if st.session_state.questions:
     questions = st.session_state.questions
@@ -346,8 +395,8 @@ if st.session_state.questions:
     <div class="status-strip">
         <div>
             <span class="pill">Question {idx + 1} of {len(questions)}</span>
-            <span class="pill">{level}</span>
-            <span class="pill">{topic}</span>
+            <span class="pill">{st.session_state.cfg_level}</span>
+            <span class="pill">{st.session_state.cfg_topic}</span>
         </div>
         <div>
             <span class="pill">Attempted: {answered_count}/{len(questions)}</span>
@@ -430,8 +479,6 @@ if st.session_state.questions:
                 st.metric("Performance", "Keep Going 💪")
 
 else:
-    st.info("👈 മുകളിൽ ഇടതുവശത്തുള്ള **`>`** ബട്ടൺ ടാപ്പ് ചെയ്ത് സൈഡ്‌ബാർ തുറക്കുക; എന്നിട്ട് Language, Level, Topic, ചോദ്യങ്ങളുടെ എണ്ണം എന്നിവ സെറ്റ് ചെയ്ത് **Generate New Quiz** ക്ലിക്ക് ചെയ്യുക.")
-
     c1, c2, c3 = st.columns(3)
     with c1:
         st.markdown("""
@@ -451,7 +498,7 @@ else:
         st.markdown("""
         <div class="feature-box">
             <h4>🧭 Easy Navigation</h4>
-            <p>സൈഡ്‌ബാറിലെ Question Palette വഴി ഏത് ചോദ്യത്തിലേക്കും വേഗം പോകാം.</p>
+            <p>Question Palette വഴി ഏത് ചോദ്യത്തിലേക്കും വേഗം പോകാം.</p>
         </div>
         """, unsafe_allow_html=True)
 
